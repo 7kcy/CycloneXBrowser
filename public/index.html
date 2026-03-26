@@ -916,7 +916,19 @@
     try { return new URL(url).hostname.replace('www.', ''); } catch(e) { return url; }
   }
 
-  function browserBack()    { try { document.getElementById('siteFrame').contentWindow.history.back(); } catch(e){ window.history.back(); } }
+  function browserBack() {
+    const frame = document.getElementById('siteFrame');
+    // Check if iframe has history to go back to
+    try {
+      const histLen = frame.contentWindow.history.length;
+      if (histLen > 1) {
+        frame.contentWindow.history.back();
+        return;
+      }
+    } catch(e) {}
+    // No iframe history — go back to home
+    goHome();
+  }
   function browserForward() { try { document.getElementById('siteFrame').contentWindow.history.forward(); } catch(e){ window.history.forward(); } }
   function browserRefresh() {
     const f = document.getElementById('siteFrame');
