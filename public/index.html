@@ -100,6 +100,7 @@
     .topbar-url-bar input:focus{text-align:left;color:var(--text)}
     .topbar-url-bar input::placeholder{color:var(--text-3)}
     body.screen-home .topbar-center{display:none}
+    body.screen-browser .topbar-center{display:none}
     .topbar-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
     .icon-btn{background:none;border:1px solid var(--border);color:var(--text-2);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
     .icon-btn:hover{background:var(--surface-2);color:var(--text);border-color:var(--border-2)}
@@ -543,6 +544,7 @@ const EMOJI_LIST=['▶️','🎵','🎧','🔍','💬','🔴','💻','📖','�
 
 document.addEventListener('DOMContentLoaded',()=>{
   document.body.classList.add('screen-home');
+  document.body.classList.add('screen-home');
   setTheme(localStorage.getItem('cx-theme')||'dark',true);
   setTabsEnabled(localStorage.getItem('cx-tabs')==='true',true);
   setSearchMode(localStorage.getItem('cx-search-mode')||'ai',true);
@@ -682,6 +684,8 @@ function showScreen(w){
   document.getElementById('resultsScreen').classList.toggle('hidden',w!=='results');
   document.getElementById('browserScreen').classList.toggle('hidden',w!=='browser');
   document.body.classList.toggle('screen-home', w==='home');
+  document.body.classList.toggle('screen-results', w==='results');
+  document.body.classList.toggle('screen-browser', w==='browser');
 }
 function goHome(){showScreen('home');updateActiveTab({type:'home',title:'New Tab'});document.getElementById('homeInput').value='';document.getElementById('topbarInput').value='';setTimeout(()=>document.getElementById('homeInput').focus(),50);}
 function goHomeNoTab(){showScreen('home');document.getElementById('homeInput').value='';document.getElementById('topbarInput').value='';}
@@ -726,6 +730,12 @@ function suggestionsCard(query){
   return `<div class="result-card" style="margin-top:12px"><div class="result-card-header"><span class="result-badge">Related</span></div><div class="quick-chips">${s.map(x=>`<button class="chip" onclick="quickSearch('${escAttr(x)}')">${escHTML(x)}</button>`).join('')}</div></div>`;
 }
 
+// Domains that block proxies — load them directly (no proxy)
+const DIRECT_DOMAINS=['google.com','google.','youtube.com','facebook.com','twitter.com','instagram.com','reddit.com','tiktok.com','netflix.com','twitch.tv','discord.com','spotify.com','github.com'];
+function shouldBypassProxy(url){
+  try{const h=new URL(url).hostname.replace('www.','');return DIRECT_DOMAINS.some(d=>h===d||h.endsWith('.'+d)||h.startsWith(d));}catch{return false;}
+}
+
 function openBrowser(url){showScreen('browser');updateActiveTab({type:'browser',title:urlTitle(url),url});loadUrl(url,true);}
 function loadUrl(url,updateInput=true){
   currentBrowserUrl=url;
@@ -733,7 +743,9 @@ function loadUrl(url,updateInput=true){
   blocked.classList.add('hidden');frame.style.display='';
   if(updateInput){document.getElementById('browserUrlInput').value=url;document.getElementById('topbarInput').value=url;}
   document.getElementById('openNewBtn').onclick=()=>window.open(url,'_blank');
-  const src=proxyEnabled?`/api/proxy?url=${encodeURIComponent(url)}`:url;
+  // Bypass proxy for sites that block it (Google, YouTube, etc.)
+  const bypass=shouldBypassProxy(url);
+  const src=(proxyEnabled&&!bypass)?`/api/proxy?url=${encodeURIComponent(url)}`:url;
   loading.classList.remove('hidden');
   prog.className='browser-progress';prog.style.opacity='1';void prog.offsetWidth;prog.className='browser-progress running';
   frame.onload=()=>{
