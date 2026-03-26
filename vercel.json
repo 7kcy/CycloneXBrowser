@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/proxy.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -14,6 +18,10 @@
     {
       "src": "/api/search",
       "dest": "/api/search.js"
+    },
+    {
+      "src": "/api/proxy",
+      "dest": "/api/proxy.js"
     },
     {
       "src": "/(.*)",
