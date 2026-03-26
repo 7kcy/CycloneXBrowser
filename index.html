@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyclone X</title>
+  <link rel="icon" href="CyLogo_png.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <span class="settings-title">Settings</span>
+      <button class="close-btn" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Appearance</div>
+      <div class="theme-toggle-group">
+        <button class="theme-btn active" id="darkBtn" onclick="setTheme('dark')">
+          <span class="theme-icon">◑</span> Dark
+        </button>
+        <button class="theme-btn" id="lightBtn" onclick="setTheme('light')">
+          <span class="theme-icon">○</span> Light
+        </button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Search Mode</div>
+      <div class="theme-toggle-group">
+        <button class="theme-btn active" id="aiBtn" onclick="setMode('ai')">
+          <span class="theme-icon">⚡</span> AI-Powered
+        </button>
+        <button class="theme-btn" id="webBtn" onclick="setMode('web')">
+          <span class="theme-icon">⊞</span> Web Links
+        </button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">Version</div>
+      <div class="settings-meta">Cyclone X v1.0 — Powered by Claude</div>
+    </div>
+  </div>
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <img src="CyLogo_png.png" alt="Cyclone X" class="topbar-logo" onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='flex'" />
+      <div class="logo-fallback" id="fallbackLogo">CX</div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="openSettings()" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Home Screen -->
+  <main class="home" id="homeScreen">
+    <div class="home-center">
+      <div class="brand-block">
+        <img src="CyLogo_png.png" alt="Cyclone X Logo" class="main-logo" onerror="this.style.display='none'; document.getElementById('fallbackMainLogo').style.display='flex'" />
+        <div class="logo-fallback main-logo-fallback" id="fallbackMainLogo">CX</div>
+        <h1 class="brand-name">Cyclone<span class="brand-x">X</span></h1>
+        <p class="brand-tagline">AI-powered search. Instant answers.</p>
+      </div>
+
+      <div class="search-wrap">
+        <div class="search-bar" id="homeSearchBar">
+          <button class="search-icon-btn mic-btn" onclick="startVoice()" title="Voice search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <input type="text" id="homeInput" placeholder="Ask anything…" autocomplete="off" onkeydown="handleKey(event, 'home')" />
+          <button class="search-icon-btn search-go-btn" onclick="doSearch()" title="Search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
+        <div class="search-hint">Press <kbd>Enter</kbd> to search · <kbd>⌥ Alt+V</kbd> for voice</div>
+      </div>
+
+      <div class="quick-chips">
+        <button class="chip" onclick="quickSearch('Latest AI news')">AI News</button>
+        <button class="chip" onclick="quickSearch('How does quantum computing work?')">Quantum Computing</button>
+        <button class="chip" onclick="quickSearch('Best programming languages 2025')">Top Languages</button>
+        <button class="chip" onclick="quickSearch('Space exploration updates')">Space</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Results Screen -->
+  <div class="results-screen hidden" id="resultsScreen">
+    <!-- Results Top Bar -->
+    <div class="results-topbar">
+      <button class="back-btn" onclick="goHome()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div class="results-search-bar">
+        <input type="text" id="resultsInput" placeholder="Search…" onkeydown="handleKey(event, 'results')" />
+        <button class="search-icon-btn" onclick="doSearchFromResults()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="results-body">
+      <div class="results-query-label" id="queryLabel"></div>
+
+      <div class="results-container" id="resultsContainer">
+        <div class="loading-state" id="loadingState">
+          <div class="spinner"></div>
+          <span>Cyclone X is thinking…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice Indicator -->
+  <div class="voice-indicator hidden" id="voiceIndicator">
+    <div class="voice-pulse"></div>
+    <span>Listening…</span>
+    <button onclick="stopVoice()">Stop</button>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
