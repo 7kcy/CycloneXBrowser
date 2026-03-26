@@ -1,12 +1,8 @@
 {
   "name": "cyclone-x",
   "version": "1.0.0",
-  "description": "Cyclone X — AI-powered search engine",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
+  "type": "module",
+  "engines": {
+    "node": "18.x"
   }
 }
