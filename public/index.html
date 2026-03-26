@@ -144,6 +144,27 @@
     .theme-btn:hover { border-color: var(--border-2); color: var(--text-2); }
     .theme-btn.active { background: var(--text); border-color: var(--text); color: var(--bg); }
     .settings-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); line-height: 1.6; }
+    .search-mode-bar { display: flex; gap: 6px; justify-content: center; }
+    .mode-pill {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text-3); font-family: var(--font-mono); font-size: 11px;
+      padding: 5px 14px; border-radius: 20px; cursor: pointer; transition: all 0.15s;
+    }
+    .mode-pill:hover { border-color: var(--border-2); color: var(--text-2); }
+    .mode-pill.active { background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 600; }
+    .mode-btn {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text-2); font-family: var(--font-mono); font-size: 12px;
+      padding: 12px 14px; border-radius: 10px; cursor: pointer;
+      text-align: left; width: 100%; transition: all 0.15s;
+    }
+    .mode-btn:hover { border-color: var(--border-2); color: var(--text); }
+    .mode-btn.active { background: var(--text); border-color: var(--text); color: var(--bg); }
+    .mode-icon { font-size: 18px; flex-shrink: 0; }
+    .mode-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+    .mode-sub { font-size: 10px; opacity: 0.65; }
+    .mode-btn.active .mode-sub { opacity: 0.75; }
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 0; border-bottom: 1px solid var(--border);
@@ -316,6 +337,13 @@
     .browser-url-bar input::placeholder { color: var(--text-3); }
     .browser-iframe-wrap { flex: 1; position: relative; overflow: hidden; }
     .browser-iframe-wrap iframe { width: 100%; height: 100%; border: none; background: #fff; }
+    .iframe-loading {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      background: var(--bg); z-index: 10;
+      font-family: var(--font-mono); font-size: 12px; color: var(--text-3);
+    }
+    .iframe-loading.hidden { display: none; }
     .browser-blocked {
       position: absolute; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 16px;
@@ -380,6 +408,25 @@
       </div>
     </div>
     <div class="settings-section">
+      <div class="settings-label">Search Mode</div>
+      <div class="search-mode-group">
+        <button class="mode-btn active" id="modeAiBtn" onclick="setSearchMode('ai')">
+          <span class="mode-icon">⚡</span>
+          <div>
+            <div class="mode-title">AI Answer</div>
+            <div class="mode-sub">Get an instant AI response</div>
+          </div>
+        </button>
+        <button class="mode-btn" id="modeWebBtn" onclick="setSearchMode('web')">
+          <span class="mode-icon">🌐</span>
+          <div>
+            <div class="mode-title">Web Links</div>
+            <div class="mode-sub">Open real search results</div>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="settings-section">
       <div class="settings-label">Browser</div>
       <div class="toggle-row">
         <div>
@@ -391,10 +438,20 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Proxy Mode</div>
+          <div class="toggle-sub">Route pages through server (bypasses blocks)</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="proxyToggle" onchange="setProxyEnabled(this.checked)" checked/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>
     <div class="settings-section">
       <div class="settings-label">About</div>
-      <div class="settings-meta">Cyclone X v1.1<br/>AI by Groq · Hosted on Vercel</div>
+      <div class="settings-meta">Cyclone X v3<br/>AI by Groq · Hosted on Vercel</div>
     </div>
   </div>
 
@@ -440,6 +497,10 @@
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </button>
+        </div>
+        <div class="search-mode-bar">
+          <button class="mode-pill active" id="pillAi" onclick="setSearchMode('ai')">⚡ AI Answer</button>
+          <button class="mode-pill" id="pillWeb" onclick="setSearchMode('web')">🌐 Web Links</button>
         </div>
         <div class="search-hint">Press <kbd>Enter</kbd> to search · type a URL to browse · <kbd>Alt+V</kbd> voice</div>
       </div>
@@ -511,14 +572,18 @@
       </button>
     </div>
     <div class="browser-iframe-wrap" id="iframeWrap">
+      <div class="iframe-loading hidden" id="iframeLoading">
+        <div class="spinner"></div>
+        <span>Loading via proxy…</span>
+      </div>
       <iframe id="siteFrame"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
         allowfullscreen>
       </iframe>
       <div class="browser-blocked hidden" id="blockedMsg">
         <span class="block-icon">🚫</span>
-        <strong>This site can't be embedded</strong>
-        <p>Many sites (Google, YouTube, Twitter) block being shown inside other pages for security reasons. You can open it in a new tab instead.</p>
+        <strong>Could not load page</strong>
+        <p>The site may have blocked embedding or the proxy could not fetch it. Try opening it directly in a new tab.</p>
         <button class="open-new-btn" id="openNewBtn">Open in New Tab ↗</button>
       </div>
     </div>
@@ -536,6 +601,8 @@
 
   let currentTheme = 'dark';
   let tabsEnabled = false;
+  let searchMode = 'ai';   // 'ai' | 'web'
+  let proxyEnabled = true;
   let recognition = null, isListening = false;
   let blockedUrl = '';
   let tabs = [], activeTabId = null, tabIdCounter = 0;
@@ -544,8 +611,14 @@
   document.addEventListener('DOMContentLoaded', () => {
     setTheme(localStorage.getItem('cx-theme') || 'dark', true);
     setTabsEnabled(localStorage.getItem('cx-tabs') === 'true', true);
+    setSearchMode(localStorage.getItem('cx-search-mode') || 'ai', true);
+    setProxyEnabled(localStorage.getItem('cx-proxy') !== 'false', true);
     document.getElementById('homeInput').focus();
     document.addEventListener('keydown', e => { if (e.altKey && e.key === 'v') startVoice(); });
+    // Listen for proxy navigation messages from iframe
+    window.addEventListener('message', e => {
+      if (e.data && e.data.type === 'cx-navigate') loadUrl(e.data.url, true);
+    });
     createTab('home');
   });
 
@@ -565,6 +638,23 @@
     document.getElementById('tabsToggle').checked = val;
     if (!silent) localStorage.setItem('cx-tabs', String(val));
     renderTabs();
+  }
+
+  function setSearchMode(mode, silent = false) {
+    searchMode = mode;
+    // Settings panel buttons
+    document.getElementById('modeAiBtn').classList.toggle('active', mode === 'ai');
+    document.getElementById('modeWebBtn').classList.toggle('active', mode === 'web');
+    // Home page pills
+    document.getElementById('pillAi').classList.toggle('active', mode === 'ai');
+    document.getElementById('pillWeb').classList.toggle('active', mode === 'web');
+    if (!silent) localStorage.setItem('cx-search-mode', mode);
+  }
+
+  function setProxyEnabled(val, silent = false) {
+    proxyEnabled = val;
+    document.getElementById('proxyToggle').checked = val;
+    if (!silent) localStorage.setItem('cx-proxy', String(val));
   }
 
   function createTab(type, data = {}) {
@@ -660,16 +750,35 @@
   function doSearch() {
     const val = document.getElementById('homeInput').value.trim();
     if (!val) return;
-    isUrl(val) ? openBrowser(normalizeUrl(val)) : runSearch(val);
+    if (isUrl(val)) {
+      openBrowser(normalizeUrl(val));
+    } else if (searchMode === 'web') {
+      openBrowser(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
+    } else {
+      runSearch(val);
+    }
   }
 
   function doSearchFromResults() {
     const val = document.getElementById('resultsInput').value.trim();
     if (!val) return;
-    isUrl(val) ? openBrowser(normalizeUrl(val)) : runSearch(val);
+    if (isUrl(val)) {
+      openBrowser(normalizeUrl(val));
+    } else if (searchMode === 'web') {
+      openBrowser(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
+    } else {
+      runSearch(val);
+    }
   }
 
-  function quickSearch(q) { document.getElementById('homeInput').value = q; runSearch(q); }
+  function quickSearch(q) {
+    document.getElementById('homeInput').value = q;
+    if (searchMode === 'web') {
+      openBrowser(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
+    } else {
+      runSearch(q);
+    }
+  }
 
   function isUrl(s) {
     return /^https?:\/\//i.test(s) || /^www\./i.test(s) || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/|$)/.test(s);
@@ -759,24 +868,34 @@
     blockedUrl = url;
     const frame = document.getElementById('siteFrame');
     const blocked = document.getElementById('blockedMsg');
+    const loading = document.getElementById('iframeLoading');
     blocked.classList.add('hidden');
     frame.style.display = '';
     if (updateInput) document.getElementById('browserUrlInput').value = url;
 
     document.getElementById('openNewBtn').onclick = () => window.open(url, '_blank');
 
-    // Detect X-Frame-Options block: if frame loads but document is null, it was blocked
+    // Use server-side proxy to bypass X-Frame-Options / CSP blocks
+    const src = proxyEnabled ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
+
+    // Show loading overlay
+    loading.classList.remove('hidden');
+
     frame.onload = () => {
-      try {
-        // If same-origin or permissive, contentDocument exists
-        const doc = frame.contentDocument;
-        if (!doc || doc.body === null) showBlocked();
-      } catch(e) {
-        // Cross-origin loaded fine — we just can't read it
+      loading.classList.add('hidden');
+      if (!proxyEnabled) {
+        // Without proxy, detect cross-origin blocks
+        try {
+          const doc = frame.contentDocument;
+          if (!doc || doc.body === null) showBlocked();
+        } catch(e) {
+          // Cross-origin loaded fine
+        }
       }
     };
+    frame.onerror = () => { loading.classList.add('hidden'); showBlocked(); };
 
-    frame.src = url;
+    frame.src = src;
   }
 
   function showBlocked() {
@@ -789,6 +908,7 @@
     const val = document.getElementById('browserUrlInput').value.trim();
     if (!val) return;
     if (isUrl(val)) loadUrl(normalizeUrl(val));
+    else if (searchMode === 'web') loadUrl(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
     else runSearch(val);
   }
 
@@ -796,9 +916,14 @@
     try { return new URL(url).hostname.replace('www.', ''); } catch(e) { return url; }
   }
 
-  function browserBack()    { try { document.getElementById('siteFrame').contentWindow.history.back(); } catch(e){} }
-  function browserForward() { try { document.getElementById('siteFrame').contentWindow.history.forward(); } catch(e){} }
-  function browserRefresh() { const f = document.getElementById('siteFrame'); f.src = f.src; }
+  function browserBack()    { try { document.getElementById('siteFrame').contentWindow.history.back(); } catch(e){ window.history.back(); } }
+  function browserForward() { try { document.getElementById('siteFrame').contentWindow.history.forward(); } catch(e){ window.history.forward(); } }
+  function browserRefresh() {
+    const f = document.getElementById('siteFrame');
+    const currentSrc = f.src;
+    f.src = '';
+    setTimeout(() => { f.src = currentSrc; }, 50);
+  }
 
   // ── Voice ──────────────────────────────────────────────
   function startVoice() {
