@@ -18,6 +18,7 @@
       --chip-bg: #1e1e1e; --chip-border: #2e2e2e; --chip-text: #888;
       --shadow: 0 4px 24px rgba(0,0,0,0.6); --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
       --kbd-bg: #222; --kbd-border: #3a3a3a; --scrollbar: #2a2a2a;
+      --tab-h: 0px;
     }
     [data-theme="light"] {
       --bg: #f5f5f5; --bg-2: #eeeeee; --bg-3: #e8e8e8;
@@ -29,6 +30,8 @@
       --shadow: 0 4px 24px rgba(0,0,0,0.12); --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
       --kbd-bg: #e8e8e8; --kbd-border: #c8c8c8; --scrollbar: #c8c8c8;
     }
+    body.tabs-on { --tab-h: 38px; }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; scroll-behavior: smooth; }
     body {
@@ -42,35 +45,65 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 8px; }
 
+    /* ── Tab Bar ─────────────────────────────────────────── */
+    .tab-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--tab-h);
+      background: var(--bg-2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 4px;
+      padding: 0 8px; z-index: 110; overflow-x: auto; overflow-y: hidden;
+      transition: height 0.2s ease;
+    }
+    .tab-bar::-webkit-scrollbar { height: 3px; }
+    body:not(.tabs-on) .tab-bar { display: none; }
+    .tab {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0 8px 0 12px;
+      height: 26px; min-width: 100px; max-width: 180px;
+      cursor: pointer; flex-shrink: 0;
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
+      transition: all 0.15s; white-space: nowrap; overflow: hidden;
+    }
+    .tab.active { background: var(--surface-2); border-color: var(--border-2); color: var(--text); }
+    .tab:hover:not(.active) { background: var(--bg-3); }
+    .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .tab-close {
+      background: none; border: none; color: var(--text-3);
+      width: 14px; height: 14px; border-radius: 3px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0; transition: all 0.1s; padding: 0;
+    }
+    .tab-close:hover { background: var(--border-2); color: var(--text); }
+    .tab-new-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-3);
+      width: 24px; height: 24px; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; transition: all 0.15s;
+    }
+    .tab-new-btn:hover { background: var(--surface-2); color: var(--text); }
+
     /* ── Topbar ─────────────────────────────────────────── */
     .topbar {
-      position: fixed; top: 0; left: 0; right: 0; height: 54px;
+      position: fixed; top: var(--tab-h); left: 0; right: 0; height: 54px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px;
+      padding: 0 16px; gap: 12px;
       background: var(--bg); border-bottom: 1px solid var(--border);
-      z-index: 100; transition: background 0.25s;
+      z-index: 100; transition: background 0.25s, top 0.2s ease;
     }
-    .topbar-left { display: flex; align-items: center; gap: 10px; }
-    .topbar-logo {
-      height: 28px; width: auto; object-fit: contain;
-    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-logo { height: 26px; width: auto; object-fit: contain; }
     [data-theme="light"] .topbar-logo { filter: invert(1); }
-    .topbar-logo-mark {
-      display: none;
-      width: 26px; height: 26px; background: var(--text); color: var(--bg);
-      border-radius: 6px; font-family: var(--font-display); font-weight: 800;
-      font-size: 10px; align-items: center; justify-content: center;
-    }
     .topbar-name {
       font-family: var(--font-display); font-size: 15px;
-      font-weight: 800; letter-spacing: -0.5px; color: var(--text);
+      font-weight: 800; letter-spacing: -0.5px; color: var(--text); white-space: nowrap;
     }
     .topbar-name span { color: var(--text-3); font-weight: 400; }
+    .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .icon-btn {
       background: none; border: 1px solid var(--border); color: var(--text-2);
       width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
+      transition: all 0.15s; flex-shrink: 0;
     }
     .icon-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
 
@@ -88,6 +121,7 @@
       transform: translateX(100%);
       transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
       box-shadow: -8px 0 40px rgba(0,0,0,0.3);
+      overflow-y: auto;
     }
     .settings-panel.open { transform: translateX(0); }
     .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
@@ -99,10 +133,7 @@
     }
     .close-btn:hover { color: var(--text); background: var(--surface-2); }
     .settings-section { margin-bottom: 28px; }
-    .settings-label {
-      font-family: var(--font-mono); font-size: 10px; color: var(--text-3);
-      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;
-    }
+    .settings-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
     .theme-toggle-group { display: flex; gap: 8px; }
     .theme-btn {
       flex: 1; background: var(--surface-2); border: 1px solid var(--border);
@@ -113,20 +144,35 @@
     .theme-btn:hover { border-color: var(--border-2); color: var(--text-2); }
     .theme-btn.active { background: var(--text); border-color: var(--text); color: var(--bg); }
     .settings-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); line-height: 1.6; }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+    .toggle-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); margin-top: 2px; }
+    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--surface-2);
+      border: 1px solid var(--border-2); border-radius: 20px; cursor: pointer; transition: all 0.2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 14px; height: 14px;
+      left: 2px; top: 2px; background: var(--text-3); border-radius: 50%; transition: all 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--text); border-color: var(--text); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(16px); background: var(--bg); }
 
     /* ── Home ───────────────────────────────────────────── */
     .home {
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      padding: 54px 24px 80px; animation: fadeUp 0.5s ease both;
+      padding-top: calc(54px + var(--tab-h) + 40px);
+      padding-bottom: 80px; padding-left: 24px; padding-right: 24px;
+      animation: fadeUp 0.5s ease both;
     }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .home-center {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 36px; width: 100%; max-width: 620px;
-    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .home-center { display: flex; flex-direction: column; align-items: center; gap: 36px; width: 100%; max-width: 620px; }
     .brand-block { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .main-logo {
       width: 80px; height: 80px; object-fit: contain;
@@ -139,21 +185,11 @@
       border-radius: 20px; font-family: var(--font-display); font-weight: 800;
       font-size: 24px; display: flex; align-items: center; justify-content: center;
       animation: spinIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
-      box-shadow: 0 0 40px rgba(255,255,255,0.07);
     }
-    @keyframes spinIn {
-      from { opacity: 0; transform: rotate(-20deg) scale(0.7); }
-      to   { opacity: 1; transform: rotate(0deg) scale(1); }
-    }
-    .brand-name {
-      font-family: var(--font-display); font-size: 52px; font-weight: 800;
-      letter-spacing: -2.5px; color: var(--text); line-height: 1;
-    }
+    @keyframes spinIn { from { opacity: 0; transform: rotate(-20deg) scale(0.7); } to { opacity: 1; transform: rotate(0deg) scale(1); } }
+    .brand-name { font-family: var(--font-display); font-size: 52px; font-weight: 800; letter-spacing: -2.5px; color: var(--text); line-height: 1; }
     .brand-x { color: var(--text-3); font-weight: 400; }
-    .brand-tagline {
-      font-family: var(--font-mono); font-size: 12px;
-      color: var(--text-3); letter-spacing: 0.05em;
-    }
+    .brand-tagline { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); letter-spacing: 0.05em; }
 
     /* ── Search ─────────────────────────────────────────── */
     .search-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -164,10 +200,7 @@
       transition: all 0.2s; box-shadow: var(--shadow-sm);
     }
     .search-bar:focus-within { border-color: var(--text-3); box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-sm); }
-    .search-bar input {
-      flex: 1; background: none; border: none; outline: none;
-      font-family: var(--font-display); font-size: 16px; color: var(--text); padding: 8px 4px;
-    }
+    .search-bar input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-display); font-size: 16px; color: var(--text); padding: 8px 4px; }
     .search-bar input::placeholder { color: var(--text-3); }
     .search-icon-btn {
       background: none; border: none; color: var(--text-3); cursor: pointer;
@@ -178,10 +211,7 @@
     .search-go-btn { background: var(--text); color: var(--bg); width: 38px; height: 38px; border-radius: 9px; }
     .search-go-btn:hover { opacity: 0.85; color: var(--bg); }
     .search-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
-    kbd {
-      background: var(--kbd-bg); border: 1px solid var(--kbd-border); border-radius: 4px;
-      padding: 1px 5px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2);
-    }
+    kbd { background: var(--kbd-bg); border: 1px solid var(--kbd-border); border-radius: 4px; padding: 1px 5px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); }
     .quick-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
     .chip {
       background: var(--chip-bg); border: 1px solid var(--chip-border);
@@ -191,11 +221,11 @@
     .chip:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); transform: translateY(-1px); }
 
     /* ── Results ────────────────────────────────────────── */
-    .results-screen { min-height: 100vh; padding-top: 54px; animation: fadeUp 0.3s ease both; }
+    .results-screen { min-height: 100vh; padding-top: calc(54px + var(--tab-h)); animation: fadeUp 0.3s ease both; }
     .results-screen.hidden { display: none; }
     .home.hidden { display: none; }
     .results-topbar {
-      position: sticky; top: 54px; background: var(--bg);
+      position: sticky; top: calc(54px + var(--tab-h)); background: var(--bg);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; gap: 12px; padding: 10px 24px; z-index: 90;
     }
@@ -211,24 +241,12 @@
       border-radius: 8px; padding: 0 8px 0 14px; gap: 6px; transition: all 0.2s;
     }
     .results-search-bar:focus-within { border-color: var(--text-3); box-shadow: 0 0 0 3px var(--accent-glow); }
-    .results-search-bar input {
-      flex: 1; background: none; border: none; outline: none;
-      font-family: var(--font-display); font-size: 14px; color: var(--text); padding: 9px 0;
-    }
+    .results-search-bar input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-display); font-size: 14px; color: var(--text); padding: 9px 0; }
     .results-search-bar input::placeholder { color: var(--text-3); }
     .results-body { max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; }
-    .results-query-label {
-      font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
-      letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 20px;
-    }
-    .loading-state {
-      display: flex; align-items: center; gap: 14px;
-      color: var(--text-3); font-family: var(--font-mono); font-size: 13px; padding: 48px 0;
-    }
-    .spinner {
-      width: 18px; height: 18px; border: 2px solid var(--border);
-      border-top-color: var(--text-2); border-radius: 50%; animation: spin 0.7s linear infinite;
-    }
+    .results-query-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 20px; }
+    .loading-state { display: flex; align-items: center; gap: 14px; color: var(--text-3); font-family: var(--font-mono); font-size: 13px; padding: 48px 0; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--text-2); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .result-card {
       background: var(--surface); border: 1px solid var(--border);
@@ -240,8 +258,7 @@
     .result-badge {
       font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
       text-transform: uppercase; color: var(--text-3);
-      background: var(--bg-3, #1a1a1a); border: 1px solid var(--border);
-      padding: 3px 8px; border-radius: 4px;
+      background: var(--bg-3); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px;
     }
     .ai-badge { color: var(--text-2); border-color: var(--border-2); }
     .result-content { font-size: 15px; line-height: 1.75; color: var(--text-2); }
@@ -251,16 +268,16 @@
     .result-content h3 { font-size: 15px; font-weight: 700; color: var(--text); margin: 16px 0 6px; }
     .result-content ul, .result-content ol { padding-left: 20px; margin-bottom: 12px; }
     .result-content li { margin-bottom: 4px; line-height: 1.7; }
-    .result-content code {
-      font-family: var(--font-mono); font-size: 12px;
-      background: var(--bg-3, #1a1a1a); border: 1px solid var(--border);
-      padding: 2px 6px; border-radius: 4px; color: var(--text);
-    }
-    .result-footer {
-      display: flex; align-items: center; gap: 12px;
-      margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
-    }
+    .result-content code { font-family: var(--font-mono); font-size: 12px; background: var(--bg-3); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; color: var(--text); }
+    .result-footer { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
     .result-footer-text { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+    .open-site-btn {
+      margin-left: auto; background: var(--surface-2); border: 1px solid var(--border-2);
+      color: var(--text-2); font-family: var(--font-mono); font-size: 10px;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .open-site-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
     .error-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 32px 28px;
@@ -268,6 +285,53 @@
       font-family: var(--font-mono); font-size: 13px; line-height: 1.8;
     }
     .error-card .error-icon { display: block; font-size: 28px; margin-bottom: 12px; }
+
+    /* ── Browser / iframe screen ────────────────────────── */
+    .browser-screen {
+      position: fixed;
+      top: calc(54px + var(--tab-h));
+      left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column;
+      z-index: 80;
+    }
+    .browser-screen.hidden { display: none; }
+    .browser-toolbar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: 8px 16px; flex-shrink: 0;
+    }
+    .browser-nav-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-3);
+      width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0;
+    }
+    .browser-nav-btn:hover { background: var(--surface-2); color: var(--text); }
+    .browser-url-bar {
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: 8px; padding: 0 12px; height: 32px; transition: all 0.2s;
+    }
+    .browser-url-bar:focus-within { border-color: var(--text-3); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .browser-url-bar input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); }
+    .browser-url-bar input::placeholder { color: var(--text-3); }
+    .browser-iframe-wrap { flex: 1; position: relative; overflow: hidden; }
+    .browser-iframe-wrap iframe { width: 100%; height: 100%; border: none; background: #fff; }
+    .browser-blocked {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      background: var(--bg); color: var(--text-2);
+      font-family: var(--font-mono); font-size: 13px; text-align: center; padding: 40px;
+    }
+    .browser-blocked.hidden { display: none; }
+    .block-icon { font-size: 36px; }
+    .browser-blocked strong { color: var(--text); font-size: 15px; }
+    .browser-blocked p { color: var(--text-3); font-size: 11px; line-height: 1.7; max-width: 360px; }
+    .open-new-btn {
+      background: var(--surface); border: 1px solid var(--border-2);
+      color: var(--text-2); font-family: var(--font-mono); font-size: 11px;
+      padding: 8px 18px; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    }
+    .open-new-btn:hover { background: var(--text); color: var(--bg); }
 
     /* ── Voice ──────────────────────────────────────────── */
     .voice-indicator {
@@ -279,15 +343,9 @@
       box-shadow: var(--shadow); z-index: 500;
     }
     .voice-indicator.hidden { display: none; }
-    .voice-pulse {
-      width: 10px; height: 10px; border-radius: 50%; background: #e0e0e0;
-      animation: pulse 1s ease infinite;
-    }
+    .voice-pulse { width: 10px; height: 10px; border-radius: 50%; background: #e0e0e0; animation: pulse 1s ease infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-    .voice-indicator button {
-      background: none; border: none; color: var(--text-3);
-      font-family: var(--font-mono); font-size: 11px; cursor: pointer; padding: 0;
-    }
+    .voice-indicator button { background: none; border: none; color: var(--text-3); font-family: var(--font-mono); font-size: 11px; cursor: pointer; padding: 0; }
     .voice-indicator button:hover { color: var(--text); }
 
     @media (max-width: 600px) {
@@ -296,10 +354,16 @@
       .results-body { padding: 20px 14px 60px; }
       .result-card { padding: 16px 18px; }
       .settings-panel { width: 100%; }
+      .topbar-name { display: none; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-new-btn" onclick="newTab()" title="New tab">+</button>
+  </div>
 
   <!-- Settings -->
   <div class="modal-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
@@ -316,22 +380,33 @@
       </div>
     </div>
     <div class="settings-section">
+      <div class="settings-label">Browser</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Tabs</div>
+          <div class="toggle-sub">Show tab bar at top</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tabsToggle" onchange="setTabsEnabled(this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="settings-section">
       <div class="settings-label">About</div>
-      <div class="settings-meta">Cyclone X v1.0<br/>Powered by Claude · Hosted on Vercel</div>
+      <div class="settings-meta">Cyclone X v1.1<br/>AI by Groq · Hosted on Vercel</div>
     </div>
   </div>
 
   <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-left">
-      <img src="/CyLogo_png.png" alt="CX" class="topbar-logo"
-           onerror="this.style.display='none';document.getElementById('tbFallback').style.display='flex'"/>
-      <div class="topbar-logo-mark" id="tbFallback">CX</div>
+      <img src="/CyLogo_png.png" alt="CX" class="topbar-logo" onerror="this.style.display='none'"/>
       <div class="topbar-name">Cyclone<span>X</span></div>
     </div>
     <div class="topbar-right">
-      <button class="icon-btn" onclick="openSettings()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="icon-btn" onclick="openSettings()" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
@@ -347,7 +422,7 @@
              onerror="this.style.display='none';document.getElementById('mainFallback').style.display='flex'"/>
         <div class="main-logo-fallback" id="mainFallback" style="display:none">CX</div>
         <h1 class="brand-name">Cyclone<span class="brand-x">X</span></h1>
-        <p class="brand-tagline">AI-powered search. Instant answers.</p>
+        <p class="brand-tagline">AI search · built-in browser</p>
       </div>
       <div class="search-wrap">
         <div class="search-bar">
@@ -358,7 +433,7 @@
               <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <input type="text" id="homeInput" placeholder="Ask anything…"
+          <input type="text" id="homeInput" placeholder="Search or enter a URL…"
                  autocomplete="off" onkeydown="handleKey(event,'home')"/>
           <button class="search-icon-btn search-go-btn" onclick="doSearch()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -366,13 +441,14 @@
             </svg>
           </button>
         </div>
-        <div class="search-hint">Press <kbd>Enter</kbd> to search · <kbd>Alt+V</kbd> for voice</div>
+        <div class="search-hint">Press <kbd>Enter</kbd> to search · type a URL to browse · <kbd>Alt+V</kbd> voice</div>
       </div>
       <div class="quick-chips">
+        <button class="chip" onclick="openBrowser('https://www.youtube.com')">▶ YouTube</button>
+        <button class="chip" onclick="openBrowser('https://www.wikipedia.org')">📖 Wikipedia</button>
+        <button class="chip" onclick="openBrowser('https://www.khanacademy.org')">🎓 Khan Academy</button>
+        <button class="chip" onclick="openBrowser('https://www.desmos.com/calculator')">📐 Desmos</button>
         <button class="chip" onclick="quickSearch('Latest AI news 2025')">AI News</button>
-        <button class="chip" onclick="quickSearch('How does quantum computing work?')">Quantum Computing</button>
-        <button class="chip" onclick="quickSearch('Best programming languages 2025')">Top Languages</button>
-        <button class="chip" onclick="quickSearch('Space exploration updates 2025')">Space</button>
       </div>
     </div>
   </main>
@@ -386,7 +462,7 @@
         </svg>
       </button>
       <div class="results-search-bar">
-        <input type="text" id="resultsInput" placeholder="Search…" onkeydown="handleKey(event,'results')"/>
+        <input type="text" id="resultsInput" placeholder="Search or enter URL…" onkeydown="handleKey(event,'results')"/>
         <button class="search-icon-btn" onclick="doSearchFromResults()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -400,6 +476,54 @@
     </div>
   </div>
 
+  <!-- Browser screen -->
+  <div class="browser-screen hidden" id="browserScreen">
+    <div class="browser-toolbar">
+      <button class="browser-nav-btn" onclick="browserBack()" title="Back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <button class="browser-nav-btn" onclick="browserForward()" title="Forward">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+      <button class="browser-nav-btn" onclick="browserRefresh()" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+      <div class="browser-url-bar">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3);flex-shrink:0">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <input type="text" id="browserUrlInput" placeholder="Enter URL or search…"
+               onkeydown="handleBrowserKey(event)" autocomplete="off"/>
+      </div>
+      <button class="browser-nav-btn" onclick="goHome()" title="Home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </button>
+    </div>
+    <div class="browser-iframe-wrap" id="iframeWrap">
+      <iframe id="siteFrame"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
+        allowfullscreen>
+      </iframe>
+      <div class="browser-blocked hidden" id="blockedMsg">
+        <span class="block-icon">🚫</span>
+        <strong>This site can't be embedded</strong>
+        <p>Many sites (Google, YouTube, Twitter) block being shown inside other pages for security reasons. You can open it in a new tab instead.</p>
+        <button class="open-new-btn" id="openNewBtn">Open in New Tab ↗</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Voice -->
   <div class="voice-indicator hidden" id="voiceIndicator">
     <div class="voice-pulse"></div>
@@ -409,15 +533,23 @@
 
   <script>
   'use strict';
-  let currentTheme = 'dark', recognition = null, isListening = false;
 
+  let currentTheme = 'dark';
+  let tabsEnabled = false;
+  let recognition = null, isListening = false;
+  let blockedUrl = '';
+  let tabs = [], activeTabId = null, tabIdCounter = 0;
+
+  // ── Init ───────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
-    const t = localStorage.getItem('cx-theme') || 'dark';
-    setTheme(t, true);
+    setTheme(localStorage.getItem('cx-theme') || 'dark', true);
+    setTabsEnabled(localStorage.getItem('cx-tabs') === 'true', true);
     document.getElementById('homeInput').focus();
     document.addEventListener('keydown', e => { if (e.altKey && e.key === 'v') startVoice(); });
+    createTab('home');
   });
 
+  // ── Theme ──────────────────────────────────────────────
   function setTheme(theme, silent = false) {
     currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
@@ -426,38 +558,143 @@
     if (!silent) localStorage.setItem('cx-theme', theme);
   }
 
+  // ── Tabs ───────────────────────────────────────────────
+  function setTabsEnabled(val, silent = false) {
+    tabsEnabled = val;
+    document.body.classList.toggle('tabs-on', val);
+    document.getElementById('tabsToggle').checked = val;
+    if (!silent) localStorage.setItem('cx-tabs', String(val));
+    renderTabs();
+  }
+
+  function createTab(type, data = {}) {
+    const id = ++tabIdCounter;
+    tabs.push({ id, type, title: type === 'home' ? 'New Tab' : (data.query || data.url || 'Tab'), query: data.query || '', url: data.url || '' });
+    activeTabId = id;
+    renderTabs();
+    return id;
+  }
+
+  function newTab() {
+    createTab('home');
+    goHome();
+  }
+
+  function closeTab(id, e) {
+    e && e.stopPropagation();
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    tabs.splice(idx, 1);
+    if (tabs.length === 0) { createTab('home'); goHome(); return; }
+    if (activeTabId === id) {
+      const next = tabs[Math.min(idx, tabs.length - 1)];
+      switchTab(next.id);
+    } else {
+      renderTabs();
+    }
+  }
+
+  function switchTab(id) {
+    activeTabId = id;
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+    renderTabs();
+    if (tab.type === 'home') {
+      goHomeNoTab();
+    } else if (tab.type === 'results') {
+      showScreen('results');
+      document.getElementById('resultsInput').value = tab.query;
+      document.getElementById('queryLabel').textContent = `Results for: "${tab.query}"`;
+    } else if (tab.type === 'browser') {
+      showScreen('browser');
+      if (tab.url) loadUrl(tab.url, true);
+    }
+  }
+
+  function updateActiveTab(data) {
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) { Object.assign(tab, data); renderTabs(); }
+  }
+
+  function renderTabs() {
+    const bar = document.getElementById('tabBar');
+    bar.querySelectorAll('.tab').forEach(el => el.remove());
+    const newBtn = bar.querySelector('.tab-new-btn');
+    tabs.forEach(tab => {
+      const el = document.createElement('div');
+      el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+      el.onclick = () => switchTab(tab.id);
+      el.innerHTML = `<span class="tab-title">${escHTML(tab.title)}</span><button class="tab-close" onclick="closeTab(${tab.id},event)">✕</button>`;
+      bar.insertBefore(el, newBtn);
+    });
+  }
+
+  // ── Settings ───────────────────────────────────────────
   function openSettings()  { document.getElementById('settingsPanel').classList.add('open');    document.getElementById('settingsOverlay').classList.add('open'); }
   function closeSettings() { document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open'); }
 
-  function goHome() {
-    document.getElementById('resultsScreen').classList.add('hidden');
-    document.getElementById('homeScreen').classList.remove('hidden');
-    document.getElementById('homeInput').value = '';
-    document.getElementById('homeInput').focus();
+  // ── Screens ────────────────────────────────────────────
+  function showScreen(which) {
+    document.getElementById('homeScreen').classList.toggle('hidden', which !== 'home');
+    document.getElementById('resultsScreen').classList.toggle('hidden', which !== 'results');
+    document.getElementById('browserScreen').classList.toggle('hidden', which !== 'browser');
   }
 
-  function handleKey(e, src) { if (e.key === 'Enter') src === 'home' ? doSearch() : doSearchFromResults(); }
-  function doSearch()          { const q = document.getElementById('homeInput').value.trim();    if (q) runSearch(q); }
-  function doSearchFromResults(){ const q = document.getElementById('resultsInput').value.trim(); if (q) runSearch(q); }
-  function quickSearch(q)      { document.getElementById('homeInput').value = q; runSearch(q); }
+  function goHome() {
+    showScreen('home');
+    updateActiveTab({ type: 'home', title: 'New Tab' });
+    document.getElementById('homeInput').value = '';
+    setTimeout(() => document.getElementById('homeInput').focus(), 50);
+  }
 
+  function goHomeNoTab() {
+    showScreen('home');
+    document.getElementById('homeInput').value = '';
+  }
+
+  // ── Routing ────────────────────────────────────────────
+  function handleKey(e, src) {
+    if (e.key === 'Enter') src === 'home' ? doSearch() : doSearchFromResults();
+  }
+
+  function doSearch() {
+    const val = document.getElementById('homeInput').value.trim();
+    if (!val) return;
+    isUrl(val) ? openBrowser(normalizeUrl(val)) : runSearch(val);
+  }
+
+  function doSearchFromResults() {
+    const val = document.getElementById('resultsInput').value.trim();
+    if (!val) return;
+    isUrl(val) ? openBrowser(normalizeUrl(val)) : runSearch(val);
+  }
+
+  function quickSearch(q) { document.getElementById('homeInput').value = q; runSearch(q); }
+
+  function isUrl(s) {
+    return /^https?:\/\//i.test(s) || /^www\./i.test(s) || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/|$)/.test(s);
+  }
+  function normalizeUrl(s) {
+    return /^https?:\/\//i.test(s) ? s : 'https://' + s;
+  }
+
+  // ── AI Search ──────────────────────────────────────────
   async function runSearch(query) {
-    document.getElementById('homeScreen').classList.add('hidden');
-    document.getElementById('resultsScreen').classList.remove('hidden');
+    showScreen('results');
+    updateActiveTab({ type: 'results', title: query, query });
     document.getElementById('resultsInput').value = query;
     document.getElementById('queryLabel').textContent = `Results for: "${query}"`;
     document.getElementById('resultsContainer').innerHTML = `<div class="loading-state"><div class="spinner"></div><span>Cyclone X is thinking…</span></div>`;
     window.scrollTo({ top: 0 });
-
     try {
-      const res  = await fetch('/api/search', {
+      const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || `Error ${res.status}`);
-
+      const siteUrl = guessSiteUrl(query);
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       document.getElementById('resultsContainer').innerHTML = `
         <div class="result-card">
@@ -467,7 +704,11 @@
           </div>
           <div class="result-content">${data.result}</div>
           <div class="result-footer">
-            <span class="result-footer-text">Generated at ${time} · Powered by Claude</span>
+            <span class="result-footer-text">Generated at ${time} · Powered by Groq</span>
+            ${siteUrl ? `<button class="open-site-btn" onclick="openBrowser('${escAttr(siteUrl)}')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              Open ${new URL(siteUrl).hostname.replace('www.','')}
+            </button>` : ''}
           </div>
         </div>
         ${suggestionsCard(query)}`;
@@ -481,13 +722,85 @@
     }
   }
 
+  const KNOWN_SITES = {
+    youtube: 'https://www.youtube.com', wikipedia: 'https://www.wikipedia.org',
+    reddit: 'https://www.reddit.com', twitter: 'https://www.twitter.com',
+    github: 'https://www.github.com', google: 'https://www.google.com',
+    roblox: 'https://www.roblox.com', minecraft: 'https://www.minecraft.net',
+    'khan academy': 'https://www.khanacademy.org', khanacademy: 'https://www.khanacademy.org',
+    desmos: 'https://www.desmos.com', wolfram: 'https://www.wolframalpha.com',
+    netflix: 'https://www.netflix.com', twitch: 'https://www.twitch.tv',
+    discord: 'https://discord.com', instagram: 'https://www.instagram.com',
+  };
+
+  function guessSiteUrl(query) {
+    const q = query.toLowerCase();
+    for (const [k, v] of Object.entries(KNOWN_SITES)) {
+      if (q.includes(k)) return v;
+    }
+    return null;
+  }
+
   function suggestionsCard(query) {
     const base = query.toLowerCase().split(' ').slice(0,3).join(' ');
-    const s = [`How does ${base} work`,`What is ${base}`,`${base} explained`,`Best ${base}`,`${base} 2025`].filter(x=>x!==query).slice(0,5);
-    const chips = s.map(x=>`<button class="chip" onclick="quickSearch('${escAttr(x)}')">${escHTML(x)}</button>`).join('');
+    const s = [`How does ${base} work`, `What is ${base}`, `${base} explained`, `Best ${base}`, `${base} 2025`].filter(x => x !== query).slice(0, 5);
+    const chips = s.map(x => `<button class="chip" onclick="quickSearch('${escAttr(x)}')">${escHTML(x)}</button>`).join('');
     return `<div class="result-card" style="margin-top:12px;"><div class="result-card-header"><span class="result-badge">Related Searches</span></div><div class="quick-chips" style="justify-content:flex-start;">${chips}</div></div>`;
   }
 
+  // ── Browser ────────────────────────────────────────────
+  function openBrowser(url) {
+    showScreen('browser');
+    updateActiveTab({ type: 'browser', title: urlTitle(url), url });
+    loadUrl(url, true);
+  }
+
+  function loadUrl(url, updateInput = true) {
+    blockedUrl = url;
+    const frame = document.getElementById('siteFrame');
+    const blocked = document.getElementById('blockedMsg');
+    blocked.classList.add('hidden');
+    frame.style.display = '';
+    if (updateInput) document.getElementById('browserUrlInput').value = url;
+
+    document.getElementById('openNewBtn').onclick = () => window.open(url, '_blank');
+
+    // Detect X-Frame-Options block: if frame loads but document is null, it was blocked
+    frame.onload = () => {
+      try {
+        // If same-origin or permissive, contentDocument exists
+        const doc = frame.contentDocument;
+        if (!doc || doc.body === null) showBlocked();
+      } catch(e) {
+        // Cross-origin loaded fine — we just can't read it
+      }
+    };
+
+    frame.src = url;
+  }
+
+  function showBlocked() {
+    document.getElementById('siteFrame').style.display = 'none';
+    document.getElementById('blockedMsg').classList.remove('hidden');
+  }
+
+  function handleBrowserKey(e) {
+    if (e.key !== 'Enter') return;
+    const val = document.getElementById('browserUrlInput').value.trim();
+    if (!val) return;
+    if (isUrl(val)) loadUrl(normalizeUrl(val));
+    else runSearch(val);
+  }
+
+  function urlTitle(url) {
+    try { return new URL(url).hostname.replace('www.', ''); } catch(e) { return url; }
+  }
+
+  function browserBack()    { try { document.getElementById('siteFrame').contentWindow.history.back(); } catch(e){} }
+  function browserForward() { try { document.getElementById('siteFrame').contentWindow.history.forward(); } catch(e){} }
+  function browserRefresh() { const f = document.getElementById('siteFrame'); f.src = f.src; }
+
+  // ── Voice ──────────────────────────────────────────────
   function startVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Voice search requires Chrome or Edge.'); return; }
