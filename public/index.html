@@ -145,6 +145,44 @@
     .theme-btn.active { background: var(--text); border-color: var(--text); color: var(--bg); }
     .settings-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); line-height: 1.6; }
     .search-mode-bar { display: flex; gap: 6px; justify-content: center; }
+    /* ── Link Preview Card ───────────────────────────────── */
+    .link-preview {
+      width: 100%; background: var(--surface); border: 1px solid var(--border-2);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: all 0.2s; box-shadow: var(--shadow-sm);
+      display: none; animation: fadeUp 0.2s ease both;
+    }
+    .link-preview:hover { border-color: var(--text-3); box-shadow: var(--shadow); }
+    .link-preview.visible { display: block; }
+    .link-preview-inner { display: flex; align-items: stretch; gap: 0; }
+    .link-preview-img {
+      width: 120px; min-height: 80px; flex-shrink: 0;
+      background: var(--bg-3); overflow: hidden; position: relative;
+    }
+    .link-preview-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .link-preview-img.no-img { display: flex; align-items: center; justify-content: center; }
+    .link-preview-body { flex: 1; padding: 12px 14px; min-width: 0; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+    .link-preview-host {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.03em;
+    }
+    .link-preview-favicon { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; flex-shrink: 0; }
+    .link-preview-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .link-preview-desc { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .link-preview-action {
+      display: flex; align-items: center; padding: 0 14px 0 0; flex-shrink: 0;
+    }
+    .link-preview-go {
+      background: var(--text); color: var(--bg); border: none;
+      border-radius: 8px; padding: 7px 14px; font-family: var(--font-mono);
+      font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .link-preview-go:hover { opacity: 0.85; }
+    .link-preview-loading {
+      display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+    }
     .mode-pill {
       background: var(--surface); border: 1px solid var(--border);
       color: var(--text-3); font-family: var(--font-mono); font-size: 11px;
@@ -191,9 +229,45 @@
       padding-top: calc(54px + var(--tab-h) + 40px);
       padding-bottom: 80px; padding-left: 24px; padding-right: 24px;
       animation: fadeUp 0.5s ease both;
+      position: relative; overflow: hidden;
     }
+    /* ── Home Background ─────────────────────────────────── */
+    #homeBgCanvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+    body.bg-off #homeBgCanvas { opacity: 0; }
+    body.bg-off .home-shooting-stars { opacity: 0; }
+    .home-shooting-stars {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+      opacity: 1; transition: opacity 0.6s ease;
+    }
+    .home-shooting-stars span {
+      position: absolute; width: 180px; height: 2px;
+      background: linear-gradient(90deg, #fff, #e0e0e0, transparent);
+      border-radius: 999px;
+      box-shadow: 0 0 30px rgba(255,255,255,.35), 0 0 10px rgba(255,255,255,.5);
+      opacity: 0;
+      animation: cx-shoot var(--dur, 5s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes cx-shoot {
+      0%   { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 1; }
+      25%  { transform: translateX(-700px) translateY(700px) rotate(-45deg); opacity: 0; }
+      100% { opacity: 0; }
+    }
+    .home-shooting-stars span:nth-child(1)  { top:0%;  left:95%; --delay:0s;   --dur:5s;   }
+    .home-shooting-stars span:nth-child(2)  { top:0%;  left:70%; --delay:1.5s; --dur:6s;   }
+    .home-shooting-stars span:nth-child(3)  { top:10%; left:108%;--delay:3s;   --dur:5.5s; }
+    .home-shooting-stars span:nth-child(4)  { top:0%;  left:45%; --delay:4.5s; --dur:6.5s; }
+    .home-shooting-stars span:nth-child(5)  { top:25%; left:105%;--delay:1s;   --dur:5.8s; }
+    .home-shooting-stars span:nth-child(6)  { top:0%;  left:20%; --delay:6s;   --dur:5.2s; }
+    .home-shooting-stars span:nth-child(7)  { top:40%; left:110%;--delay:2.5s; --dur:7s;   }
+    .home-shooting-stars span:nth-child(8)  { top:5%;  left:82%; --delay:5s;   --dur:5.6s; }
+    .home-shooting-stars span:nth-child(9)  { top:55%; left:106%;--delay:0.5s; --dur:6.2s; }
+    .home-shooting-stars span:nth-child(10) { top:0%;  left:58%; --delay:7s;   --dur:5s;   }
+    .home-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 36px; width: 100%; max-width: 620px; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    .home-center { display: flex; flex-direction: column; align-items: center; gap: 36px; width: 100%; max-width: 620px; }
     .brand-block { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .main-logo {
       width: 80px; height: 80px; object-fit: contain;
@@ -406,6 +480,16 @@
         <button class="theme-btn active" id="darkBtn" onclick="setTheme('dark')"><span>◑</span> Dark</button>
         <button class="theme-btn" id="lightBtn" onclick="setTheme('light')"><span>○</span> Light</button>
       </div>
+      <div class="toggle-row" style="margin-top:12px;">
+        <div>
+          <div class="toggle-label">Home Background</div>
+          <div class="toggle-sub">Animated aurora effect</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="bgToggle" onchange="setBgEnabled(this.checked)" checked/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>
     <div class="settings-section">
       <div class="settings-label">Search Mode</div>
@@ -472,6 +556,11 @@
   </header>
 
   <!-- Home -->
+  <canvas id="homeBgCanvas"></canvas>
+  <div class="home-shooting-stars">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
   <main class="home" id="homeScreen">
     <div class="home-center">
       <div class="brand-block">
@@ -491,7 +580,7 @@
             </svg>
           </button>
           <input type="text" id="homeInput" placeholder="Search or enter a URL…"
-                 autocomplete="off" onkeydown="handleKey(event,'home')"/>
+                 autocomplete="off" onkeydown="handleKey(event,'home')" oninput="onHomeInput()"/>
           <button class="search-icon-btn search-go-btn" onclick="doSearch()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -502,6 +591,7 @@
           <button class="mode-pill active" id="pillAi" onclick="setSearchMode('ai')">⚡ AI Answer</button>
           <button class="mode-pill" id="pillWeb" onclick="setSearchMode('web')">🌐 Web Links</button>
         </div>
+        <div class="link-preview" id="linkPreview" onclick="doSearch()"></div>
         <div class="search-hint">Press <kbd>Enter</kbd> to search · type a URL to browse · <kbd>Alt+V</kbd> voice</div>
       </div>
       <div class="quick-chips">
@@ -603,6 +693,7 @@
   let tabsEnabled = false;
   let searchMode = 'ai';   // 'ai' | 'web'
   let proxyEnabled = true;
+  let bgEnabled = true;
   let recognition = null, isListening = false;
   let blockedUrl = '';
   let tabs = [], activeTabId = null, tabIdCounter = 0;
@@ -613,6 +704,8 @@
     setTabsEnabled(localStorage.getItem('cx-tabs') === 'true', true);
     setSearchMode(localStorage.getItem('cx-search-mode') || 'ai', true);
     setProxyEnabled(localStorage.getItem('cx-proxy') !== 'false', true);
+    setBgEnabled(localStorage.getItem('cx-bg') !== 'false', true);
+    initBg();
     document.getElementById('homeInput').focus();
     document.addEventListener('keydown', e => { if (e.altKey && e.key === 'v') startVoice(); });
     // Listen for proxy navigation messages from iframe
@@ -655,6 +748,56 @@
     proxyEnabled = val;
     document.getElementById('proxyToggle').checked = val;
     if (!silent) localStorage.setItem('cx-proxy', String(val));
+  }
+
+  function setBgEnabled(val, silent = false) {
+    bgEnabled = val;
+    document.getElementById('bgToggle').checked = val;
+    document.body.classList.toggle('bg-off', !val);
+    if (!silent) localStorage.setItem('cx-bg', String(val));
+  }
+
+  // ── Home Background Canvas ──────────────────────────────
+  function initBg() {
+    const canvas = document.getElementById('homeBgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, dots;
+
+    function rng(s) {
+      let v = s >>> 0;
+      return () => { v ^= v<<13; v ^= v>>17; v ^= v<<5; return (v>>>0)/0xffffffff; };
+    }
+
+    function init() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      const r = rng(99999);
+      dots = Array.from({length: 50}, () => ({
+        x: r() * W, y: r() * H,
+        rad: 0.6 + r() * 1.2,
+        o: 0.25 + r() * 0.55,
+        sp: 0.15 + r() * 0.4,
+      }));
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, W, H);
+      for (const d of dots) {
+        d.y -= d.sp;
+        if (d.y < -5) { d.y = H + 5; d.x = Math.random() * W; }
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.rad, 0, Math.PI*2);
+        // adapt color for light theme
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        ctx.fillStyle = isDark ? `rgba(255,255,255,${d.o})` : `rgba(80,60,160,${d.o * 0.5})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    init();
+    tick();
+    window.addEventListener('resize', init);
   }
 
   function createTab(type, data = {}) {
@@ -728,6 +871,7 @@
     document.getElementById('homeScreen').classList.toggle('hidden', which !== 'home');
     document.getElementById('resultsScreen').classList.toggle('hidden', which !== 'results');
     document.getElementById('browserScreen').classList.toggle('hidden', which !== 'browser');
+    if (which !== 'home') hideLinkPreview();
   }
 
   function goHome() {
@@ -787,7 +931,72 @@
     return /^https?:\/\//i.test(s) ? s : 'https://' + s;
   }
 
-  // ── AI Search ──────────────────────────────────────────
+  // ── Link Preview ────────────────────────────────────────
+  let previewDebounce = null;
+  let previewAbort = null;
+
+  function onHomeInput() {
+    const val = document.getElementById('homeInput').value.trim();
+    clearTimeout(previewDebounce);
+    if (!isUrl(val)) { hideLinkPreview(); return; }
+    showLinkPreviewLoading();
+    previewDebounce = setTimeout(() => fetchLinkPreview(normalizeUrl(val)), 500);
+  }
+
+  function hideLinkPreview() {
+    const el = document.getElementById('linkPreview');
+    el.classList.remove('visible');
+    el.innerHTML = '';
+  }
+
+  function showLinkPreviewLoading() {
+    const el = document.getElementById('linkPreview');
+    el.classList.add('visible');
+    el.innerHTML = `<div class="link-preview-loading"><div class="spinner" style="width:14px;height:14px;border-width:2px"></div>Fetching preview…</div>`;
+  }
+
+  async function fetchLinkPreview(url) {
+    if (previewAbort) previewAbort.abort();
+    previewAbort = new AbortController();
+    try {
+      const res = await fetch(`/api/meta?url=${encodeURIComponent(url)}`, { signal: previewAbort.signal });
+      const data = await res.json();
+      if (data.error) { hideLinkPreview(); return; }
+      renderLinkPreview(data, url);
+    } catch(e) {
+      if (e.name !== 'AbortError') hideLinkPreview();
+    }
+  }
+
+  function renderLinkPreview(data, url) {
+    const el = document.getElementById('linkPreview');
+    const current = document.getElementById('homeInput').value.trim();
+    if (!isUrl(current)) { hideLinkPreview(); return; }
+
+    const imgHtml = data.ogImage
+      ? `<div class="link-preview-img"><img src="${escHTML(data.ogImage)}" onerror="this.parentElement.style.display='none'" alt=""/></div>`
+      : '';
+
+    const faviconHtml = data.favicon
+      ? `<img class="link-preview-favicon" src="${escHTML(data.favicon)}" onerror="this.style.display='none'" alt=""/>`
+      : '';
+
+    el.classList.add('visible');
+    el.innerHTML = `
+      <div class="link-preview-inner">
+        ${imgHtml}
+        <div class="link-preview-body">
+          <div class="link-preview-host">${faviconHtml}<span>${escHTML(data.hostname)}</span></div>
+          <div class="link-preview-title">${escHTML(data.title || data.hostname)}</div>
+          ${data.description ? `<div class="link-preview-desc">${escHTML(data.description)}</div>` : ''}
+        </div>
+        <div class="link-preview-action">
+          <button class="link-preview-go" onclick="event.stopPropagation();openBrowser('${escAttr(url)}')">Open ↗</button>
+        </div>
+      </div>`;
+  }
+
+
   async function runSearch(query) {
     showScreen('results');
     updateActiveTab({ type: 'results', title: query, query });
