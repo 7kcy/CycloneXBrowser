@@ -62,7 +62,7 @@
       --glass-border: rgba(220,220,220,0.09);
 
       --topbar-h: 56px;
-      --tab-h:    0px;
+      --tab-h:    0px; /* tabs now inside topbar */
     }
 
     [data-theme="light"] {
@@ -151,50 +151,77 @@
     .topbar, .tab-bar, .home, .results-screen, .browser-screen,
     .modal-overlay, .settings-panel, .voice-indicator { position: relative; z-index: 10; }
 
-    /* ══ TAB BAR ════════════════════════════════════════════ */
+    /* ══ TAB BAR — lives inside topbar, right of logo ═══════ */
     .tab-bar {
-      position: fixed; top: var(--topbar-h); left: 0; right: 0; height: var(--tab-h);
-      background: var(--glass); backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
-      border-bottom: 1px solid var(--glass-border);
-      display: flex; align-items: center; gap: 4px;
-      padding: 0 8px; z-index: 110; overflow-x: auto; overflow-y: hidden;
-      transition: height 0.2s ease;
+      display: flex; align-items: center; gap: 3px;
+      flex: 1; overflow-x: auto; overflow-y: hidden;
+      padding: 0 6px; height: 100%;
     }
-    .tab-bar::-webkit-scrollbar { height: 3px; }
+    .tab-bar::-webkit-scrollbar { height: 0; }
     body:not(.tabs-on) .tab-bar { display: none; }
+
+    /* Edge-style tab: trapezoidal feel via border-radius + bottom border trick */
     .tab {
       display: flex; align-items: center; gap: 6px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 6px; padding: 0 8px 0 12px;
-      height: 26px; min-width: 100px; max-width: 180px;
-      cursor: pointer; flex-shrink: 0;
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.04);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 9px 9px 0 0;
+      padding: 0 10px 0 12px;
+      height: 34px; min-width: 120px; max-width: 200px;
+      cursor: pointer; flex-shrink: 0; position: relative;
       font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
-      transition: all 0.15s; white-space: nowrap; overflow: hidden;
+      transition: all 0.18s; white-space: nowrap; overflow: hidden;
+      align-self: flex-end;
+      backdrop-filter: blur(8px);
     }
-    .tab.active { background: var(--surface-2); border-color: var(--accent); color: var(--text); }
-    .tab:hover:not(.active) { background: var(--bg-3); }
-    .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .tab::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+      background: var(--bg); transition: background 0.18s;
+    }
+    .tab.active {
+      background: var(--surface-2);
+      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35);
+      color: var(--text);
+      box-shadow: 0 -2px 12px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.08);
+      height: 38px;
+    }
+    .tab.active::after { background: var(--surface-2); }
+    .tab:hover:not(.active) {
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.07);
+      color: var(--text-2);
+    }
+    .tab-favicon {
+      width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0;
+      object-fit: contain; opacity: .8;
+    }
+    .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
     .tab-close {
       background: none; border: none; color: var(--text-3);
-      width: 14px; height: 14px; border-radius: 3px; cursor: pointer;
+      width: 16px; height: 16px; border-radius: 4px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; flex-shrink: 0; transition: all 0.1s; padding: 0;
+      font-size: 11px; flex-shrink: 0; transition: all 0.12s; padding: 0;
+      opacity: 0; transition: opacity .15s, background .12s;
     }
-    .tab-close:hover { background: var(--border-2); color: var(--text); }
+    .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
+    .tab-close:hover { background: rgba(255,80,80,0.18); color: #ff6060; }
     .tab-new-btn {
       background: none; border: 1px solid var(--border); color: var(--text-3);
-      width: 24px; height: 24px; border-radius: 5px; cursor: pointer;
+      width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0; transition: all 0.15s;
+      font-size: 15px; flex-shrink: 0; transition: all 0.15s;
+      align-self: center; margin-left: 2px;
     }
-    .tab-new-btn:hover { background: var(--surface-2); color: var(--text); }
+    .tab-new-btn:hover {
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.12);
+      color: var(--text); border-color: var(--border-2);
+    }
 
     /* ══ TOPBAR ═════════════════════════════════════════════ */
     .topbar {
       position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; gap: 12px;
+      display: flex; align-items: center; justify-content: flex-start;
+      padding: 0 16px 0 20px; gap: 12px;
       background: var(--glass);
       backdrop-filter: blur(28px) saturate(1.8);
       -webkit-backdrop-filter: blur(28px) saturate(1.8);
@@ -386,7 +413,7 @@
       position: relative; z-index: 5;
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      padding-top: calc(var(--topbar-h) + var(--tab-h) + 32px);
+      padding-top: calc(var(--topbar-h) + 32px);
       padding-bottom: 80px; padding-left: 24px; padding-right: 24px;
       animation: fadeUp 0.55s ease both;
     }
@@ -550,13 +577,13 @@
     .results-screen {
       position: relative; z-index: 5;
       min-height: 100vh;
-      padding-top: calc(var(--topbar-h) + var(--tab-h));
+      padding-top: calc(var(--topbar-h));
       animation: fadeUp 0.3s ease both;
     }
     .results-screen.hidden { display: none; }
     .results-topbar {
       position: sticky;
-      top: calc(var(--topbar-h) + var(--tab-h));
+      top: calc(var(--topbar-h));
       background: var(--glass);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--glass-border);
@@ -627,7 +654,7 @@
     /* ══ BROWSER ═════════════════════════════════════════════ */
     .browser-screen {
       position: fixed;
-      top: calc(var(--topbar-h) + var(--tab-h));
+      top: calc(var(--topbar-h));
       left: 0; right: 0; bottom: 0;
       display: flex; flex-direction: column; z-index: 80;
     }
@@ -823,10 +850,7 @@
   <span></span><span></span><span></span><span></span>
 </div>
 
-<!-- ══ TAB BAR ═══════════════════════════════════════════════ -->
-<div class="tab-bar" id="tabBar">
-  <button class="tab-new-btn" onclick="newTab()" title="New tab">+</button>
-</div>
+<!-- tab-bar is now inside topbar -->
 
 <!-- ══ SETTINGS ════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
@@ -913,6 +937,10 @@
   <div class="topbar-left">
     <img src="/CyLogo_png.png" alt="CX" class="topbar-logo" onerror="this.style.display='none'"/>
     <div class="topbar-name">Cyclone<span>X</span></div>
+  </div>
+  <!-- ══ TABS live here, right of logo ══ -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-new-btn" onclick="newTab()" title="New tab">+</button>
   </div>
   <div class="topbar-right">
     <button class="icon-btn" onclick="openSettings()" title="Settings">
@@ -1413,7 +1441,8 @@ function renderTabs() {
     const el = document.createElement('div');
     el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
     el.onclick = () => switchTab(tab.id);
-    el.innerHTML = `<span class="tab-title">${escHTML(tab.title)}</span><button class="tab-close" onclick="closeTab(${tab.id},event)">✕</button>`;
+    const favicon = tab.url ? `<img class="tab-favicon" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(tab.url)}&sz=16" onerror="this.style.display='none'"/>` : '';
+    el.innerHTML = `${favicon}<span class="tab-title">${escHTML(tab.title)}</span><button class="tab-close" onclick="closeTab(${tab.id},event)" title="Close">✕</button>`;
     bar.insertBefore(el, newBtn);
   });
 }
@@ -1448,25 +1477,32 @@ function doSearch() {
   const val = document.getElementById('homeInput').value.trim();
   if (!val) return;
   if (isUrl(val))              openBrowser(normalizeUrl(val));
-  else if (searchMode==='web') openBrowser(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
+  else if (searchMode==='web') openBrowser(googleSearchUrl(val));
   else                         runSearch(val);
 }
 function doSearchFromResults() {
   const val = document.getElementById('resultsInput').value.trim();
   if (!val) return;
   if (isUrl(val))              openBrowser(normalizeUrl(val));
-  else if (searchMode==='web') openBrowser(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
+  else if (searchMode==='web') openBrowser(googleSearchUrl(val));
   else                         runSearch(val);
 }
 function quickSearch(q) {
   document.getElementById('homeInput').value = q;
-  if (searchMode==='web') openBrowser(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
+  if (searchMode==='web') openBrowser(googleSearchUrl(q));
   else runSearch(q);
 }
 function isUrl(s) {
-  return /^https?:\/\//i.test(s) || /^www\./i.test(s) || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/|$)/.test(s);
+  // Must have a dot and look like a real domain, not just words with dots
+  if (/^https?:\/\//i.test(s)) return true;
+  if (/^www\./i.test(s)) return true;
+  // Require TLD of 2-6 chars and no spaces
+  if (s.indexOf(' ') !== -1) return false;
+  return /^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?:\/|$)/.test(s) && /\.[a-zA-Z]{2,6}(\/|$|\?)/.test(s);
 }
 function normalizeUrl(s) { return /^https?:\/\//i.test(s) ? s : 'https://' + s; }
+// Use Startpage as Google proxy — renders properly in iframes unlike google.com directly
+function googleSearchUrl(q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q) + '&igu=1'; }
 
 /* ── AI Search ─────────────────────────────────────────────── */
 async function runSearch(query) {
@@ -1668,7 +1704,7 @@ function handleBrowserKey(e) {
   const val = document.getElementById('browserUrlInput').value.trim();
   if (!val) return;
   if (isUrl(val))              loadUrl(normalizeUrl(val));
-  else if (searchMode==='web') loadUrl(`https://www.google.com/search?q=${encodeURIComponent(val)}`);
+  else if (searchMode==='web') loadUrl(googleSearchUrl(val));
   else                         runSearch(val);
 }
 
