@@ -66,32 +66,33 @@
     }
 
     [data-theme="light"] {
-      --bg:        #eef0ff;
-      --bg-2:      #e2e5ff;
-      --bg-3:      #d4d8f8;
-      --surface:   rgba(255,255,255,0.68);
-      --surface-2: rgba(238,240,255,0.88);
-      --border:    rgba(80,90,200,0.14);
-      --border-2:  rgba(70,80,190,0.26);
-      --text:      #10123a;
-      --text-2:    #42508a;
-      --text-3:    #8890c0;
-      --accent:    #4a5ae8;
-      --accent-r:  74; --accent-g: 90; --accent-b: 232;
-      --accent-glow: rgba(74, 90, 232, 0.16);
-      --chip-bg:   rgba(210,215,255,0.72);
-      --chip-border: rgba(90,100,210,0.22);
-      --chip-text: #5060a8;
-      --shadow:    0 12px 48px rgba(40,50,140,0.13);
-      --shadow-sm: 0 3px 14px rgba(40,50,140,0.09);
-      --kbd-bg:    rgba(215,220,255,0.92);
-      --kbd-border:#b0b8e8;
-      --scrollbar: #b0b8e0;
-      --glass:     rgba(255,255,255,0.52);
-      --glass-border: rgba(90,110,240,0.18);
+      --bg:        #2a2a2a;
+      --bg-2:      #222222;
+      --bg-3:      #1e1e1e;
+      --surface:   rgba(50, 50, 50, 0.72);
+      --surface-2: rgba(60, 60, 60, 0.88);
+      --border:    rgba(180, 180, 180, 0.12);
+      --border-2:  rgba(200, 200, 200, 0.22);
+      --text:      #e8e8e8;
+      --text-2:    #a0a0a0;
+      --text-3:    #606060;
+      --accent:    #c8c8c8;
+      --accent-r:  200; --accent-g: 200; --accent-b: 200;
+      --accent-glow: rgba(200, 200, 200, 0.14);
+      --btn-on-accent: #111111;
+      --chip-bg:   rgba(40, 40, 40, 0.75);
+      --chip-border: rgba(180, 180, 180, 0.15);
+      --chip-text: #808080;
+      --shadow:    0 12px 48px rgba(0,0,0,0.5);
+      --shadow-sm: 0 3px 14px rgba(0,0,0,0.35);
+      --kbd-bg:    rgba(35,35,35,0.95);
+      --kbd-border:#3a3a3a;
+      --scrollbar: #3a3a3a;
+      --glass:     rgba(30, 30, 30, 0.60);
+      --glass-border: rgba(200,200,200,0.10);
     }
 
-    body.tabs-on { --tab-h: 38px; }
+    [data-theme="light"] .nebula { opacity: 0; }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; scroll-behavior: smooth; }
@@ -742,7 +743,7 @@
     <div class="settings-label">Appearance</div>
     <div class="theme-toggle-group">
       <button class="theme-btn active" id="darkBtn" onclick="setTheme('dark')"><span>◑</span> Dark</button>
-      <button class="theme-btn" id="lightBtn" onclick="setTheme('light')"><span>○</span> Light</button>
+      <button class="theme-btn" id="lightBtn" onclick="setTheme('light')"><span>⛈</span> Storm</button>
     </div>
   </div>
   <div class="settings-section">
