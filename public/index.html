@@ -1001,7 +1001,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('homeInput').focus();
   document.addEventListener('keydown', e => { if (e.altKey && e.key === 'v') startVoice(); });
   window.addEventListener('message', e => {
-    if (e.data && e.data.type === 'cx-navigate') loadUrl(e.data.url, true);
+    if (e.data && e.data.type === 'cx-navigate') {
+      loadUrl(e.data.url, true, e.data.method, e.data.body);
+    }
   });
   createTab('home');
 });
@@ -1432,7 +1434,7 @@ function openBrowser(url) {
   loadUrl(url, true);
 }
 
-function loadUrl(url, updateInput = true) {
+function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
   blockedUrl = url;
   const frame   = document.getElementById('siteFrame');
   const blocked = document.getElementById('blockedMsg');
@@ -1441,16 +1443,34 @@ function loadUrl(url, updateInput = true) {
   frame.style.display = '';
   if (updateInput) document.getElementById('browserUrlInput').value = url;
   document.getElementById('openNewBtn').onclick = () => window.open(url,'_blank');
-  const src = proxyEnabled ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
+
   loading.classList.remove('hidden');
-  frame.onload = () => {
-    loading.classList.add('hidden');
-    if (!proxyEnabled) {
-      try { const doc = frame.contentDocument; if (!doc || doc.body===null) showBlocked(); } catch(e) {}
-    }
-  };
+  frame.onload = () => { loading.classList.add('hidden'); };
   frame.onerror = () => { loading.classList.add('hidden'); showBlocked(); };
-  frame.src = src;
+
+  if (method === 'POST' && postBody) {
+    // For POST form submissions, use a hidden form to submit through the proxy
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    const tempForm = document.createElement('form');
+    tempForm.method = 'POST';
+    tempForm.action = proxyUrl;
+    tempForm.target = 'siteFrame';
+    tempForm.enctype = 'application/x-www-form-urlencoded';
+    // Parse postBody and add as hidden inputs
+    new URLSearchParams(postBody).forEach((val, key) => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = key;
+      inp.value = val;
+      tempForm.appendChild(inp);
+    });
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    document.body.removeChild(tempForm);
+  } else {
+    const src = `/api/proxy?url=${encodeURIComponent(url)}`;
+    frame.src = src;
+  }
 }
 
 function showBlocked() {
