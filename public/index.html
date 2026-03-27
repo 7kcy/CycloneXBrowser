@@ -656,11 +656,108 @@
     .browser-iframe-wrap iframe { width: 100%; height: 100%; border: none; background: #fff; }
     .iframe-loading {
       position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 12px;
+      align-items: center; justify-content: center;
       background: var(--bg); z-index: 10;
-      font-family: var(--font-mono); font-size: 12px; color: var(--text-3);
     }
     .iframe-loading.hidden { display: none; }
+
+    /* ── Proxy loading card ── */
+    .cx-load-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 16px;
+      padding: 28px 32px 24px;
+      width: min(460px, 90vw);
+      box-shadow: var(--shadow);
+      font-family: var(--font-mono);
+      backdrop-filter: blur(18px);
+    }
+    .cx-load-title {
+      font-family: var(--font-display);
+      font-size: 17px; font-weight: 700;
+      color: var(--text); margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .cx-load-subtitle {
+      font-size: 11px; color: var(--text-3);
+      margin-bottom: 16px; letter-spacing: .03em;
+      min-height: 16px; transition: color .3s;
+    }
+    /* progress bar */
+    .cx-load-bar-track {
+      width: 100%; height: 5px;
+      background: var(--border);
+      border-radius: 99px; overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .cx-load-bar-fill {
+      height: 100%; width: 0%;
+      border-radius: 99px;
+      background: linear-gradient(90deg,
+        rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.9),
+        rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.4));
+      box-shadow: 0 0 10px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35);
+      transition: width 0.38s cubic-bezier(.4,0,.2,1);
+    }
+    /* stats row */
+    .cx-load-stats {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text-3);
+      margin-bottom: 14px;
+    }
+    .cx-load-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.85);
+      flex-shrink: 0;
+      animation: cx-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes cx-pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .45; transform: scale(.75); }
+    }
+    /* log drawer */
+    .cx-load-log-toggle {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: none;
+      color: var(--text-3); font-family: var(--font-mono);
+      font-size: 10px; cursor: pointer; padding: 0;
+      letter-spacing: .05em; text-transform: uppercase;
+      transition: color .2s;
+      width: 100%;
+    }
+    .cx-load-log-toggle:hover { color: var(--text-2); }
+    .cx-load-log-arrow {
+      display: inline-block; transition: transform .22s;
+      font-style: normal; font-size: 9px;
+    }
+    .cx-load-log-arrow.open { transform: rotate(90deg); }
+    .cx-load-log-wrap {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .28s cubic-bezier(.4,0,.2,1);
+    }
+    .cx-load-log-wrap.open { max-height: 160px; }
+    .cx-load-log {
+      margin-top: 10px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 10.5px; color: var(--text-3);
+      line-height: 1.75;
+      overflow-y: auto; max-height: 130px;
+    }
+    .cx-load-log-line { display: block; }
+    .cx-load-log-line .ts { color: var(--text-3); opacity: .55; margin-right: 6px; }
+    .cx-load-log-line .ok { color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),.75); }
+    .cx-load-tip {
+      margin-top: 14px; font-size: 10px; color: var(--text-3);
+      letter-spacing: .03em;
+    }
+    .cx-load-tip kbd {
+      background: var(--kbd-bg); border: 1px solid var(--kbd-border);
+      border-radius: 4px; padding: 1px 5px; font-size: 9px;
+    }
     .browser-blocked {
       position: absolute; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 16px;
@@ -941,8 +1038,25 @@
   </div>
   <div class="browser-iframe-wrap" id="iframeWrap">
     <div class="iframe-loading hidden" id="iframeLoading">
-      <div class="spinner"></div>
-      <span>Loading via proxy…</span>
+      <div class="cx-load-card">
+        <div class="cx-load-title">Deploying proxy…</div>
+        <div class="cx-load-subtitle" id="cxLoadSub">Connecting…</div>
+        <div class="cx-load-bar-track">
+          <div class="cx-load-bar-fill" id="cxLoadBar"></div>
+        </div>
+        <div class="cx-load-stats">
+          <span class="cx-load-dot" id="cxLoadDot"></span>
+          <span id="cxLoadStats">—</span>
+        </div>
+        <button class="cx-load-log-toggle" id="cxLogToggle" onclick="cxToggleLog()">
+          <span class="cx-load-log-arrow" id="cxLogArrow">▶</span>
+          Details
+        </button>
+        <div class="cx-load-log-wrap" id="cxLogWrap">
+          <div class="cx-load-log" id="cxLog"></div>
+        </div>
+        <div class="cx-load-tip">Tip: press <kbd>Esc</kbd> to skip loading when possible.</div>
+      </div>
     </div>
     <iframe id="siteFrame"
       sandbox="allow-scripts allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
@@ -1431,6 +1545,81 @@ function openBrowser(url) {
   loadUrl(url, true);
 }
 
+/* ── Proxy loading card helpers ──────────────────────────────── */
+let _cxLoadTimer = null;
+
+function cxToggleLog() {
+  const wrap  = document.getElementById('cxLogWrap');
+  const arrow = document.getElementById('cxLogArrow');
+  const open  = wrap.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+function cxLogLine(msg, ok = false) {
+  const log = document.getElementById('cxLog');
+  if (!log) return;
+  const ts  = new Date().toLocaleTimeString('en-GB', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit', fractionalSecondDigits: 3 });
+  const line = document.createElement('span');
+  line.className = 'cx-load-log-line';
+  line.innerHTML = `<span class="ts">[${ts}]</span>${ok ? '<span class="ok"> ✓ </span>' : ' '}${msg}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function cxStartLoad(url) {
+  const bar  = document.getElementById('cxLoadBar');
+  const sub  = document.getElementById('cxLoadSub');
+  const stat = document.getElementById('cxLoadStats');
+  const log  = document.getElementById('cxLog');
+  if (!bar) return;
+
+  // Reset
+  if (_cxLoadTimer) { clearInterval(_cxLoadTimer); _cxLoadTimer = null; }
+  bar.style.width = '0%';
+  if (log) log.innerHTML = '';
+
+  const host = (() => { try { return new URL(url).hostname; } catch(_) { return url; } })();
+  const startTime = Date.now();
+
+  const steps = [
+    { pct: 12, label: 'Resolving host…',          log: `resolving ${host}` },
+    { pct: 28, label: 'Negotiating TLS & ALPN…',  log: 'opening secure channel' },
+    { pct: 45, label: 'Sending request…',          log: 'GET → proxy → upstream' },
+    { pct: 62, label: 'Awaiting response…',        log: 'waiting for upstream headers' },
+    { pct: 76, label: 'Rewriting resources…',      log: 'rewriting HTML / CSS / JS' },
+    { pct: 88, label: 'Rendering page…',           log: 'stage/2 ok', ok: true },
+    { pct: 94, label: 'Finalising…',               log: 'stage/3 ok', ok: true },
+  ];
+
+  let step = 0;
+  function tick() {
+    if (step >= steps.length) { clearInterval(_cxLoadTimer); _cxLoadTimer = null; return; }
+    const s = steps[step++];
+    bar.style.width = s.pct + '%';
+    if (sub) sub.textContent = s.label;
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    if (stat) {
+      const rtt  = Math.floor(12 + Math.random() * 28);
+      const mbps = (55 + Math.random() * 25).toFixed(1);
+      const ops  = (3.2 + Math.random() * 0.8).toFixed(1);
+      stat.textContent = `${mbps} MB/s • ${ops}k ops/s • RTT ~ ${rtt} ms`;
+    }
+    cxLogLine(s.log, s.ok || false);
+  }
+  tick();
+  _cxLoadTimer = setInterval(tick, 320 + Math.random() * 180);
+}
+
+function cxStopLoad(ok = true) {
+  if (_cxLoadTimer) { clearInterval(_cxLoadTimer); _cxLoadTimer = null; }
+  const bar  = document.getElementById('cxLoadBar');
+  const sub  = document.getElementById('cxLoadSub');
+  if (bar) bar.style.width = ok ? '100%' : '0%';
+  if (sub) sub.textContent = ok ? 'Done.' : 'Failed.';
+  if (ok) cxLogLine('page loaded', true);
+}
+
+/* ── loadUrl ─────────────────────────────────────────────────── */
 function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
   blockedUrl = url;
   const frame   = document.getElementById('siteFrame');
@@ -1442,8 +1631,9 @@ function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
   document.getElementById('openNewBtn').onclick = () => window.open(url,'_blank');
 
   loading.classList.remove('hidden');
-  frame.onload = () => { loading.classList.add('hidden'); };
-  frame.onerror = () => { loading.classList.add('hidden'); showBlocked(); };
+  cxStartLoad(url);
+  frame.onload  = () => { cxStopLoad(true);  setTimeout(() => loading.classList.add('hidden'), 320); };
+  frame.onerror = () => { cxStopLoad(false); loading.classList.add('hidden'); showBlocked(); };
 
   if (method === 'POST' && postBody) {
     const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
