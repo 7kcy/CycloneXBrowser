@@ -153,68 +153,85 @@
 
     /* ══ TAB BAR — lives inside topbar, right of logo ═══════ */
     .tab-bar {
-      display: flex; align-items: center; gap: 3px;
-      flex: 1; overflow-x: auto; overflow-y: hidden;
-      padding: 0 6px; height: 100%;
+      display: flex; align-items: flex-end; gap: 2px;
+      flex: 1; min-width: 0; overflow-x: auto; overflow-y: visible;
+      padding: 0 6px; height: 100%; scrollbar-width: none;
     }
-    .tab-bar::-webkit-scrollbar { height: 0; }
+    .tab-bar::-webkit-scrollbar { display: none; }
     body:not(.tabs-on) .tab-bar { display: none; }
 
-    /* Edge-style tab: trapezoidal feel via border-radius + bottom border trick */
+    /* ── Edge-style glass tabs ── */
     .tab {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.04);
-      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+      position: relative; flex-shrink: 0;
+      min-width: 100px; max-width: 180px; height: 32px;
+      padding: 0 8px 0 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
       border-bottom: none;
-      border-radius: 9px 9px 0 0;
-      padding: 0 10px 0 12px;
-      height: 34px; min-width: 120px; max-width: 200px;
-      cursor: pointer; flex-shrink: 0; position: relative;
-      font-family: var(--font-mono); font-size: 11px; color: var(--text-2);
-      transition: all 0.18s; white-space: nowrap; overflow: hidden;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer; overflow: hidden;
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      backdrop-filter: blur(10px);
       align-self: flex-end;
-      backdrop-filter: blur(8px);
+      margin-bottom: -1px;
     }
-    .tab::after {
-      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
-      background: var(--bg); transition: background 0.18s;
+    .tab::before {
+      content:''; position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      pointer-events: none;
     }
     .tab.active {
-      background: var(--surface-2);
-      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35);
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.08);
+      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.22);
       color: var(--text);
-      box-shadow: 0 -2px 12px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.08);
-      height: 38px;
+      box-shadow: 0 -1px 8px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1),
+                  inset 0 1px 0 rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1);
     }
-    .tab.active::after { background: var(--surface-2); }
     .tab:hover:not(.active) {
-      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.07);
+      background: rgba(255,255,255,0.07);
       color: var(--text-2);
     }
     .tab-favicon {
-      width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0;
-      object-fit: contain; opacity: .8;
+      width: 12px; height: 12px; border-radius: 2px;
+      flex-shrink: 0; object-fit: contain; opacity: 0.75;
     }
-    .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+    .tab-title {
+      flex: 1; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; font-size: 11px; letter-spacing: 0.01em;
+    }
     .tab-close {
-      background: none; border: none; color: var(--text-3);
-      width: 16px; height: 16px; border-radius: 4px; cursor: pointer;
+      flex-shrink: 0; width: 15px; height: 15px;
+      background: none; border: none; border-radius: 4px;
+      color: var(--text-3); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; flex-shrink: 0; transition: all 0.12s; padding: 0;
-      opacity: 0; transition: opacity .15s, background .12s;
+      font-size: 10px; padding: 0; opacity: 0;
+      transition: opacity 0.15s, background 0.12s, color 0.12s;
     }
-    .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
-    .tab-close:hover { background: rgba(255,80,80,0.18); color: #ff6060; }
+    .tab:hover .tab-close,
+    .tab.active .tab-close { opacity: 1; }
+    .tab-close:hover { background: rgba(255,70,70,0.2); color: #ff6060; }
+    /* separator between tabs */
+    .tab + .tab::before {
+      content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
+      width: 1px; background: rgba(255,255,255,0.06); pointer-events: none;
+    }
+    .tab.active + .tab::before,
+    .tab + .tab.active::before { display: none; }
     .tab-new-btn {
-      background: none; border: 1px solid var(--border); color: var(--text-3);
-      width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+      flex-shrink: 0; align-self: center; margin-left: 4px;
+      width: 24px; height: 24px; border-radius: 6px;
+      background: none; border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-3); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; flex-shrink: 0; transition: all 0.15s;
-      align-self: center; margin-left: 2px;
+      font-size: 16px; line-height: 1;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
     .tab-new-btn:hover {
-      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.12);
-      color: var(--text); border-color: var(--border-2);
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1);
+      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25);
+      color: var(--text);
     }
 
     /* ══ TOPBAR ═════════════════════════════════════════════ */
@@ -234,14 +251,14 @@
       background: linear-gradient(90deg, transparent 0%, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.3) 50%, transparent 100%);
       transition: background 0.4s;
     }
-    .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
     .topbar-logo { height: 26px; width: auto; object-fit: contain; transition: filter 0.3s; }
     .topbar-name {
       font-family: var(--font-display); font-size: 15px;
       font-weight: 800; letter-spacing: -0.5px; color: var(--text); white-space: nowrap;
     }
     .topbar-name span { color: var(--accent); font-weight: 400; transition: color 0.3s; }
-    .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
     .icon-btn {
       background: none; border: 1px solid var(--border); color: var(--text-2);
       width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
@@ -1110,7 +1127,7 @@
 'use strict';
 
 const DEFAULT_SHORTCUTS = [
-  { label: 'Google',  url: 'https://www.google.com',          icon: 'https://www.google.com/favicon.ico' },
+  { label: 'Search',  url: 'https://duckduckgo.com',          icon: 'https://duckduckgo.com/favicon.ico' },
   { label: 'YouTube', url: 'https://www.youtube.com',         icon: 'https://www.youtube.com/favicon.ico' },
   { label: 'Spotify', url: 'https://open.spotify.com',        icon: '🎵' },
   { label: 'Discord', url: 'https://discord.com',             icon: 'https://discord.com/assets/favicon.ico' },
@@ -1502,7 +1519,7 @@ function isUrl(s) {
 }
 function normalizeUrl(s) { return /^https?:\/\//i.test(s) ? s : 'https://' + s; }
 // Use Startpage as Google proxy — renders properly in iframes unlike google.com directly
-function googleSearchUrl(q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q) + '&igu=1'; }
+function googleSearchUrl(q) { return 'https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&ia=web'; }
 
 /* ── AI Search ─────────────────────────────────────────────── */
 async function runSearch(query) {
