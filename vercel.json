@@ -1,31 +1,17 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "api/search.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/proxy.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
+    { "src": "api/search.js", "use": "@vercel/node" },
+    { "src": "api/proxy.js",  "use": "@vercel/node" },
+    { "src": "public/**",     "use": "@vercel/static" }
   ],
   "routes": [
-    {
-      "src": "/api/search",
-      "dest": "/api/search.js"
-    },
-    {
-      "src": "/api/proxy",
-      "dest": "/api/proxy.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
-  ]
+    { "src": "/api/search", "dest": "/api/search.js" },
+    { "src": "/api/proxy",  "dest": "/api/proxy.js"  },
+    { "src": "/(.*)",       "dest": "/public/$1"     }
+  ],
+  "functions": {
+    "api/proxy.js":  { "maxDuration": 15 },
+    "api/search.js": { "maxDuration": 20 }
+  }
 }
