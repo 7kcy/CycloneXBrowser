@@ -123,19 +123,30 @@ module.exports = async function handler(req, res) {
   ['pushState','replaceState'].forEach(function(fn) {
     var orig = history[fn].bind(history);
     history[fn] = function(state, title, url) {
-      var a = toAbs(url);
-      if (a) { window.parent.postMessage({ type: 'cx-navigate', url: a }, '*'); }
-      else orig(state, title, url);
+      if (!url) { try { orig(state, title, url); } catch(e) {} return; }
+      var a = toAbs(String(url));
+      if (a) {
+        // Try rewriting the URL to stay within the proxy origin
+        try { orig(state, title, PROXY + encodeURIComponent(a)); }
+        catch(e) { window.parent.postMessage({ type: 'cx-navigate', url: a }, '*'); }
+      } else {
+        try { orig(state, title, url); } catch(e) {}
+      }
     };
   });
 
   // Proxy fetch()
   var _fetch = window.fetch;
   window.fetch = function(input, init) {
-    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var url = typeof input === 'string' ? input
+            : (input instanceof Request) ? input.url
+            : (input && input.url) || '';
     var a = toAbs(url);
     if (a && !a.startsWith(location.origin)) {
+      // Rewrite to proxy; if input was a Request object, rebuild as string
       input = PROXY + encodeURIComponent(a);
+      // Strip credentials mode that would cause CORS preflight failures
+      init = Object.assign({}, init || {}, { credentials: 'omit', mode: 'cors' });
     }
     return _fetch(input, init);
   };
@@ -184,12 +195,21 @@ module.exports = async function handler(req, res) {
       html = html.replace(/<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*\/?>/gi, '');
       html = html.replace(/<meta[^>]*http-equiv=["']X-Frame-Options["'][^>]*\/?>/gi, '');
 
-      // Inject base + rewriter
-      const inject = '<base href="' + targetUrl + '">' + rewriterScript;
+      // Inject base tag + rewriter script.
+      // The rewriter MUST run before any page scripts (including async/defer)
+      // so interceptors are in place before Google's JS fires XHR/fetch calls.
+      const baseTag = '<base href="' + targetUrl + '">';
       if (/<head[^>]*>/i.test(html)) {
-        html = html.replace(/(<head[^>]*>)/i, '$1' + inject);
+        // 1. Insert <base> right after <head>
+        html = html.replace(/(<head[^>]*>)/i, '$1' + baseTag);
+        // 2. Insert rewriter immediately before the first <script so it runs first
+        if (/<script/i.test(html)) {
+          html = html.replace(/(<script)/i, rewriterScript + '$1');
+        } else {
+          html = html.replace(/(<\/head>)/i, rewriterScript + '$1');
+        }
       } else {
-        html = inject + html;
+        html = baseTag + rewriterScript + html;
       }
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');

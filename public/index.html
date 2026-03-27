@@ -129,7 +129,6 @@
       width: 220px; height: 1.5px;
       border-radius: 999px;
       opacity: 0;
-      /* color set dynamically via JS */
       background: linear-gradient(90deg, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.95), rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35), transparent);
       box-shadow: 0 0 20px 2px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.3);
       animation: shoot var(--dur, 5s) ease-in-out infinite var(--delay, 0s);
@@ -946,7 +945,7 @@
       <span>Loading via proxy…</span>
     </div>
     <iframe id="siteFrame"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
+      sandbox="allow-scripts allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
       allowfullscreen></iframe>
     <div class="browser-blocked hidden" id="blockedMsg">
       <span class="block-icon">🚫</span>
@@ -1136,7 +1135,6 @@ function applyAccentColor(hex, silent) {
   root.style.setProperty('--accent-glow', `rgba(${r},${g},${b},0.18)`);
   root.style.setProperty('--btn-on-accent', fg);
 
-  // Update theme-color meta (tab/browser chrome on mobile)
   const meta = document.getElementById('themeColorMeta');
   if (meta) meta.content = hex;
 
@@ -1149,7 +1147,6 @@ function applyAccentColor(hex, silent) {
     sw.classList.toggle('active', sw.dataset.hex === hex)
   );
 
-  // ★ Update meteor colors in real-time
   updateMeteorColors();
 
   if (!silent) localStorage.setItem('cx-accent', hex);
@@ -1449,14 +1446,12 @@ function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
   frame.onerror = () => { loading.classList.add('hidden'); showBlocked(); };
 
   if (method === 'POST' && postBody) {
-    // For POST form submissions, use a hidden form to submit through the proxy
     const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
     const tempForm = document.createElement('form');
     tempForm.method = 'POST';
     tempForm.action = proxyUrl;
     tempForm.target = 'siteFrame';
     tempForm.enctype = 'application/x-www-form-urlencoded';
-    // Parse postBody and add as hidden inputs
     new URLSearchParams(postBody).forEach((val, key) => {
       const inp = document.createElement('input');
       inp.type = 'hidden';
