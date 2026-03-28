@@ -150,6 +150,8 @@ const STRIP_HEADERS = new Set([
   'permissions-policy','cross-origin-embedder-policy',
   'cross-origin-opener-policy','cross-origin-resource-policy',
   'report-to','nel','expect-ct','content-encoding',
+  'x-xss-protection','referrer-policy','origin-agent-cluster',
+  'document-policy','feature-policy',
 ]);
 
 // ── Rewriter script injected into every HTML page ─────────────────────────────
@@ -215,6 +217,32 @@ function buildRewriterScript(targetUrl, origin) {
     if(a&&!a.startsWith(location.origin))url=PROXY+encodeURIComponent(a);
     return _open.call(this,method,url,async!==false,user,pass);
   };
+  // MutationObserver: rewrite src on dynamically added elements
+  var _rewriteSrc=function(node){
+    if(node.nodeType!==1)return;
+    var tag=node.tagName&&node.tagName.toLowerCase();
+    var lazyAttrs=['data-src','data-lazy-src','data-original','data-srcset'];
+    lazyAttrs.forEach(function(a){
+      var v=node.getAttribute&&node.getAttribute(a);
+      if(v){var abs=toAbs(v);if(abs)node.setAttribute(a,PROXY+encodeURIComponent(abs));}
+    });
+    if((tag==='img'||tag==='script'||tag==='iframe')&&node.src){
+      var a=toAbs(node.getAttribute('src'));
+      if(a&&!a.startsWith(location.origin))node.setAttribute('src',PROXY+encodeURIComponent(a));
+    }
+    node.querySelectorAll&&node.querySelectorAll('[data-src],[data-lazy-src],[data-original]').forEach(function(el){
+      lazyAttrs.forEach(function(a){
+        var v=el.getAttribute(a);
+        if(v){var abs=toAbs(v);if(abs)el.setAttribute(a,PROXY+encodeURIComponent(abs));}
+      });
+    });
+  };
+  var _obs=new MutationObserver(function(mutations){
+    mutations.forEach(function(m){
+      m.addedNodes.forEach(_rewriteSrc);
+    });
+  });
+  _obs.observe(document.documentElement,{childList:true,subtree:true});
   // cookie notifications
   try{
     var _cs=Object.getOwnPropertyDescriptor(Document.prototype,'cookie').set;
@@ -350,9 +378,15 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    res.setHeader('X-Frame-Options',          'ALLOWALL');
-    res.setHeader('Content-Security-Policy',  '');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Frame-Options',                    'ALLOWALL');
+    res.setHeader('Content-Security-Policy',             '');
+    res.setHeader('Access-Control-Allow-Origin',         '*');
+    res.setHeader('Access-Control-Allow-Methods',        'GET, POST, OPTIONS, HEAD');
+    res.setHeader('Access-Control-Allow-Headers',        '*');
+    res.setHeader('Access-Control-Allow-Credentials',    'true');
+    res.setHeader('Cross-Origin-Resource-Policy',        'cross-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy',        'unsafe-none');
+    res.setHeader('Cross-Origin-Opener-Policy',          'unsafe-none');
 
     const rawCT  = upstream.headers.get('content-type') || '';
     const enc    = upstream.headers.get('content-encoding') || '';
@@ -368,7 +402,9 @@ module.exports = async function handler(req, res) {
         ['img','src'],['script','src'],['link','href'],['video','src'],
         ['audio','src'],['source','src'],['input','src'],['iframe','src'],
         ['track','src'],['embed','src'],['video','poster'],
-        ['img','data-src'],['body','background'],
+        ['img','data-src'],['img','data-lazy-src'],['img','data-original'],
+        ['img','data-srcset'],['div','data-bg'],['section','data-bg'],
+        ['body','background'],['link','data-href'],
       ]) html = rewriteAttr(html, tag, attr, base);
 
       html = rewriteSrcset(html, base);

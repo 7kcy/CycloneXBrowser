@@ -153,29 +153,27 @@
 
     /* ══ TAB BAR — lives inside topbar, right of logo ═══════ */
     .tab-bar {
-      display: flex; align-items: flex-end; gap: 2px;
-      flex: 1; min-width: 0; overflow-x: auto; overflow-y: visible;
+      display: flex; align-items: center; gap: 3px;
+      flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden;
       padding: 0 6px; height: 100%; scrollbar-width: none;
     }
     .tab-bar::-webkit-scrollbar { display: none; }
     body:not(.tabs-on) .tab-bar { display: none; }
 
-    /* ── Edge-style glass tabs ── */
+    /* ── Glass tabs ── */
     .tab {
       display: flex; align-items: center; gap: 7px;
       position: relative; flex-shrink: 0;
-      min-width: 100px; max-width: 180px; height: 32px;
+      min-width: 120px; max-width: 200px;
+      height: 34px; /* fixed height */
+      align-self: center; /* vertically center in topbar */
       padding: 0 8px 0 10px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-bottom: none;
-      border-radius: 8px 8px 0 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px;
       cursor: pointer; overflow: hidden;
       font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
       transition: background 0.15s, color 0.15s, border-color 0.15s;
-      backdrop-filter: blur(10px);
-      align-self: flex-end;
-      margin-bottom: -1px;
     }
     .tab::before {
       content:''; position:absolute; inset:0;
@@ -183,14 +181,14 @@
       pointer-events: none;
     }
     .tab.active {
-      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.08);
-      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.22);
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.12);
+      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.3);
       color: var(--text);
-      box-shadow: 0 -1px 8px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1),
-                  inset 0 1px 0 rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1);
+      box-shadow: 0 0 14px rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.15),
+                  inset 0 1px 0 rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.12);
     }
     .tab:hover:not(.active) {
-      background: rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.08);
       color: var(--text-2);
     }
     .tab-favicon {
@@ -212,25 +210,21 @@
     .tab:hover .tab-close,
     .tab.active .tab-close { opacity: 1; }
     .tab-close:hover { background: rgba(255,70,70,0.2); color: #ff6060; }
-    /* separator between tabs */
-    .tab + .tab::before {
-      content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
-      width: 1px; background: rgba(255,255,255,0.06); pointer-events: none;
-    }
-    .tab.active + .tab::before,
-    .tab + .tab.active::before { display: none; }
     .tab-new-btn {
-      flex-shrink: 0; align-self: center; margin-left: 4px;
-      width: 24px; height: 24px; border-radius: 6px;
-      background: none; border: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+      align-self: center; /* same as .tab */
+      width: 34px; height: 34px; /* same height as .tab */
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
       color: var(--text-3); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; line-height: 1;
+      font-size: 18px; line-height: 1; margin-left: 2px;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
     .tab-new-btn:hover {
-      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.1);
-      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.25);
+      background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.12);
+      border-color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.3);
       color: var(--text);
     }
 
@@ -957,7 +951,6 @@
   </div>
   <!-- ══ TABS live here, right of logo ══ -->
   <div class="tab-bar" id="tabBar">
-    <button class="tab-new-btn" onclick="newTab()" title="New tab">+</button>
   </div>
   <div class="topbar-right">
     <button class="icon-btn" onclick="openSettings()" title="Settings">
@@ -1104,7 +1097,7 @@
       </div>
     </div>
     <iframe id="siteFrame"
-      sandbox="allow-scripts allow-forms allow-popups allow-presentation allow-top-navigation-by-user-activation"
+      sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-presentation allow-top-navigation-by-user-activation allow-pointer-lock allow-modals"
       allowfullscreen></iframe>
     <div class="browser-blocked hidden" id="blockedMsg">
       <span class="block-icon">🚫</span>
@@ -1452,16 +1445,21 @@ function updateActiveTab(data) {
 
 function renderTabs() {
   const bar = document.getElementById('tabBar');
-  bar.querySelectorAll('.tab').forEach(el => el.remove());
-  const newBtn = bar.querySelector('.tab-new-btn');
+  bar.innerHTML = '';
   tabs.forEach(tab => {
     const el = document.createElement('div');
     el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
     el.onclick = () => switchTab(tab.id);
     const favicon = tab.url ? `<img class="tab-favicon" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(tab.url)}&sz=16" onerror="this.style.display='none'"/>` : '';
     el.innerHTML = `${favicon}<span class="tab-title">${escHTML(tab.title)}</span><button class="tab-close" onclick="closeTab(${tab.id},event)" title="Close">✕</button>`;
-    bar.insertBefore(el, newBtn);
+    bar.appendChild(el);
   });
+  const newBtn = document.createElement('button');
+  newBtn.className = 'tab-new-btn';
+  newBtn.title = 'New tab';
+  newBtn.textContent = '+';
+  newBtn.onclick = newTab;
+  bar.appendChild(newBtn);
 }
 
 /* ── Settings ──────────────────────────────────────────────── */
@@ -1685,7 +1683,7 @@ function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
 
   loading.classList.remove('hidden');
   cxStartLoad(url);
-  frame.onload  = () => { cxStopLoad(true);  setTimeout(() => loading.classList.add('hidden'), 320); };
+  frame.onload  = () => { cxStopLoad(true);  setTimeout(() => loading.classList.add('hidden'), 800); };
   frame.onerror = () => { cxStopLoad(false); loading.classList.add('hidden'); showBlocked(); };
 
   if (method === 'POST' && postBody) {
