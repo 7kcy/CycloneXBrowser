@@ -77,8 +77,13 @@ function proxyUrl(url, base, origin) {
   const s = url.trim();
   if (!s || /^(data:|javascript:|blob:|about:|#|mailto:|tel:)/i.test(s)) return null;
   try {
+    const resolved = new URL(s, base).href;
     const prefix = origin ? origin + PROXY_PATH : PROXY_PATH;
-    return prefix + encodeURIComponent(new URL(s, base).href);
+    // Don't double-wrap already-proxied URLs
+    if (resolved.includes(PROXY_PATH)) return null;
+    // Don't proxy our own origin
+    if (origin && resolved.startsWith(origin + '/')) return null;
+    return prefix + encodeURIComponent(resolved);
   } catch(_) { return null; }
 }
 
@@ -86,6 +91,8 @@ function proxyUrl(url, base, origin) {
 function rewriteAttr(html, tag, attr, base, origin) {
   const re = new RegExp(`(<${tag}(?:\\s[^>]*)?)\\s${attr}=(["'])([^"']*?)\\2`, 'gi');
   return html.replace(re, (m, pre, q, url) => {
+    // Never rewrite data URIs — the base64 content can contain URL-like strings
+    if (/^data:/i.test(url.trim())) return m;
     const p = proxyUrl(url, base, origin);
     return p ? `${pre} ${attr}=${q}${p}${q}` : m;
   });
@@ -234,7 +241,17 @@ var _fetch = window.fetch.bind(window);
 window.fetch = function(input, init) {
   var url = typeof input==='string' ? input : (input&&input.url ? input.url : '');
   var a = toAbs(url);
-  if (a && !a.startsWith(location.origin)) {
+  if (!a) return _fetch(input, init);
+  // Already a proxied URL — let it through as-is
+  if (a.indexOf(PROXY) !== -1 && a.indexOf('?url=') !== -1) return _fetch(input, init);
+  // Cross-origin OR same-origin-but-not-our-app (relative path resolved against PAGE_URL)
+  var targetOrigin = (function(){ try { return new URL(PAGE_URL).origin; } catch(_){ return ''; } })();
+  var resolvedAgainstTarget = (function(){ try { return new URL(url, PAGE_URL).href; } catch(_){ return ''; } })();
+  if (a.startsWith(location.origin) && targetOrigin && !url.startsWith('http') && resolvedAgainstTarget) {
+    // Relative path — resolve against the proxied page, not Vercel
+    input = PROXY+encodeURIComponent(resolvedAgainstTarget);
+    init = Object.assign({}, init||{}, {credentials:'omit', mode:'cors'});
+  } else if (!a.startsWith(location.origin)) {
     input = PROXY+encodeURIComponent(a);
     init = Object.assign({}, init||{}, {credentials:'omit', mode:'cors'});
   }
@@ -245,7 +262,16 @@ window.fetch = function(input, init) {
 var _open = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
   var a = toAbs(url);
-  if (a && !a.startsWith(location.origin)) url = PROXY+encodeURIComponent(a);
+  if (a) {
+    if (a.indexOf(PROXY) !== -1 && a.indexOf('?url=') !== -1) {
+      // already proxied
+    } else if (!url.startsWith('http') && !url.startsWith('//')) {
+      // relative — resolve against PAGE_URL (the target site)
+      try { url = PROXY+encodeURIComponent(new URL(url, PAGE_URL).href); } catch(_) {}
+    } else if (!a.startsWith(location.origin)) {
+      url = PROXY+encodeURIComponent(a);
+    }
+  }
   return _open.call(this, method, url, async!==false, user, pass);
 };
 
