@@ -1755,7 +1755,26 @@ function cxStopLoad(ok = true) {
 }
 
 /* ── loadUrl ─────────────────────────────────────────────────── */
+function buildProxySrc(url) {
+  // Don't double-wrap already-proxied URLs
+  if (url.startsWith('/api/proxy?url=')) return url;
+  if (url.includes('/api/proxy?url=')) {
+    // Extract the already-wrapped URL and use it directly
+    const match = url.match(/\/api\/proxy\?url=(.+)/);
+    if (match) return '/api/proxy?url=' + match[1];
+  }
+  return `/api/proxy?url=${encodeURIComponent(url)}`;
+}
+
 function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
+  // Unwrap double-proxied URLs from postMessage navigation
+  if (url && url.includes('/api/proxy?url=')) {
+    const match = url.match(/\/api\/proxy\?url=(.+)/);
+    if (match) {
+      try { url = decodeURIComponent(match[1]); } catch(_) {}
+    }
+  }
+
   blockedUrl = url;
   const frame   = document.getElementById('siteFrame');
   const blocked = document.getElementById('blockedMsg');
@@ -1771,25 +1790,22 @@ function loadUrl(url, updateInput = true, method = 'GET', postBody = null) {
   frame.onerror = () => { cxStopLoad(false); loading.classList.add('hidden'); showBlocked(); };
 
   if (method === 'POST' && postBody) {
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    const proxyAction = buildProxySrc(url);
     const tempForm = document.createElement('form');
     tempForm.method = 'POST';
-    tempForm.action = proxyUrl;
+    tempForm.action = proxyAction;
     tempForm.target = 'siteFrame';
     tempForm.enctype = 'application/x-www-form-urlencoded';
     new URLSearchParams(postBody).forEach((val, key) => {
       const inp = document.createElement('input');
-      inp.type = 'hidden';
-      inp.name = key;
-      inp.value = val;
+      inp.type = 'hidden'; inp.name = key; inp.value = val;
       tempForm.appendChild(inp);
     });
     document.body.appendChild(tempForm);
     tempForm.submit();
     document.body.removeChild(tempForm);
   } else {
-    const src = `/api/proxy?url=${encodeURIComponent(url)}`;
-    frame.src = src;
+    frame.src = buildProxySrc(url);
   }
 }
 

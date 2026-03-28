@@ -8,6 +8,10 @@
   "routes": [
     { "src": "/api/search", "dest": "/api/search.js" },
     { "src": "/api/proxy",  "dest": "/api/proxy.js"  },
-    { "src": "/(.*)",       "dest": "/public/$1"     }
+    {
+      "src": "/ac/(.*)",
+      "dest": "/api/proxy.js?url=https%3A%2F%2Fduckduckgo.com%2Fac%2F$1"
+    },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
