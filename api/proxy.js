@@ -195,7 +195,10 @@ function patchProto(proto, prop) {
   if (!desc || !desc.set) return;
   var origSet = desc.set, origGet = desc.get;
   Object.defineProperty(proto, prop, {
-    set: function(v) { var p=px(v); origSet.call(this, p||v); },
+    set: function(v) {
+      if (v && /^data:/i.test(String(v).trim())) { origSet.call(this, v); return; }
+      var p=px(v); origSet.call(this, p||v);
+    },
     get: origGet,
     configurable: true
   });
@@ -226,10 +229,11 @@ if (_inHTMLDesc && _inHTMLDesc.set) {
 // Simple HTML snippet rewriter for dynamic injection
 function rewriteHtmlSnippet(html) {
   if (!html || typeof html !== 'string') return html;
-  // Match src/href/action attrs with double or single quotes separately (no backreference needed)
+  // Match src/href/action attrs — but skip data: URI values
   function rwAttrQ(h, q) {
     var re = new RegExp('([\\s(](?:src|href|action)=)(' + q + ')([^' + q + ']+)' + q, 'gi');
     return h.replace(re, function(m, pre, qq, url) {
+      if (/^data:/i.test(url.trim())) return m;
       var p = px(url); return p ? pre+qq+p+qq : m;
     });
   }
@@ -315,7 +319,7 @@ function rewriteNode(node) {
   // Check resource attributes
   ['src','href','data-src','data-lazy-src','data-original'].forEach(function(a) {
     var v = node.getAttribute && node.getAttribute(a);
-    if (v && !v.startsWith(PROXY)) { var p=px(v); if(p) _setAttr.call(node,a,p); }
+    if (v && !v.startsWith(PROXY) && !/^data:/i.test(v)) { var p=px(v); if(p) _setAttr.call(node,a,p); }
   });
   // Recurse into subtree
   if (node.querySelectorAll) {
