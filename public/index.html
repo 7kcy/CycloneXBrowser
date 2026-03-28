@@ -806,6 +806,41 @@
     .block-icon { font-size: 38px; }
     .browser-blocked strong { color: var(--text); font-size: 15px; }
     .browser-blocked p { color: var(--text-3); font-size: 11px; line-height: 1.7; max-width: 360px; }
+
+    /* ── Proxy compatibility toast ── */
+    .cx-compat-toast {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18,18,18,0.96);
+      border: 1px solid rgba(252,211,77,0.3);
+      backdrop-filter: blur(16px);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 11px;
+      color: #fcd34d;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      z-index: 200;
+      max-width: min(520px, 90vw);
+      animation: toastIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes toastIn {
+      from { opacity:0; transform: translateX(-50%) translateY(16px) scale(0.94); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0)    scale(1);    }
+    }
+    .cx-compat-toast.hidden { display: none; }
+    .cx-compat-toast-icon { font-size: 16px; flex-shrink: 0; }
+    .cx-compat-toast-text { flex: 1; line-height: 1.5; }
+    .cx-compat-toast-text strong { color: #fde68a; }
+    .cx-compat-dismiss {
+      background: none; border: 1px solid rgba(252,211,77,0.3);
+      color: #fcd34d; font-family: var(--font-mono); font-size: 10px;
+      padding: 3px 9px; border-radius: 6px; cursor: pointer;
+      flex-shrink: 0; transition: all 0.15s;
+    }
+    .cx-compat-dismiss:hover { background: rgba(252,211,77,0.12); }
+
     .open-new-btn {
       background: var(--surface); border: 1px solid var(--border-2);
       color: var(--text-2); font-family: var(--font-mono); font-size: 11px;
@@ -1105,6 +1140,12 @@
       <p>The site may have blocked embedding or the proxy could not fetch it. Try opening it directly in a new tab.</p>
       <button class="open-new-btn" id="openNewBtn">Open in New Tab ↗</button>
     </div>
+    <!-- Partial-load compatibility toast -->
+    <div class="cx-compat-toast hidden" id="cxCompatToast">
+      <span class="cx-compat-toast-icon">⚠️</span>
+      <span class="cx-compat-toast-text" id="cxCompatText">This site may have limited functionality through the proxy.</span>
+      <button class="cx-compat-dismiss" onclick="document.getElementById('cxCompatToast').classList.add('hidden')">Dismiss</button>
+    </div>
   </div>
 </div>
 
@@ -1154,6 +1195,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', e => {
     if (e.data && e.data.type === 'cx-navigate') {
       loadUrl(e.data.url, true, e.data.method, e.data.body);
+    }
+    if (e.data && e.data.type === 'cx-page-loaded') {
+      // Page signaled it loaded — update URL bar
+      try {
+        const u = e.data.url;
+        if (u) document.getElementById('browserUrlInput').value = u;
+      } catch(_) {}
     }
   });
   createTab('home');
@@ -1589,10 +1637,46 @@ function suggestionsCard(query) {
   return `<div class="result-card" style="margin-top:12px;"><div class="result-card-header"><span class="result-badge">Related Searches</span></div><div class="quick-chips" style="justify-content:flex-start;">${chips}</div></div>`;
 }
 
+/* ── Partial-support sites (frontend check) ──────────────────────────────── */
+const PARTIAL_HOSTS = new Set([
+  'youtube.com','www.youtube.com',
+  'twitter.com','x.com','www.x.com',
+  'facebook.com','www.facebook.com',
+  'instagram.com','www.instagram.com',
+  'netflix.com','www.netflix.com',
+  'tiktok.com','www.tiktok.com',
+  'twitch.tv','www.twitch.tv',
+  'discord.com',
+  'spotify.com','open.spotify.com',
+  'reddit.com','www.reddit.com',
+  'linkedin.com','www.linkedin.com',
+]);
+
+function checkPartialSupport(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    if (PARTIAL_HOSTS.has(hostname)) {
+      const toast = document.getElementById('cxCompatToast');
+      const text  = document.getElementById('cxCompatText');
+      if (toast && text) {
+        text.innerHTML = `<strong>${hostname}</strong> may have limited proxy support — login, video, and live features may not fully work.`;
+        toast.classList.remove('hidden');
+        // Auto-dismiss after 8s
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => toast.classList.add('hidden'), 8000);
+      }
+    } else {
+      const toast = document.getElementById('cxCompatToast');
+      if (toast) toast.classList.add('hidden');
+    }
+  } catch(_) {}
+}
+
 /* ── Browser ───────────────────────────────────────────────── */
 function openBrowser(url) {
   showScreen('browser');
   updateActiveTab({ type:'browser', title:urlTitle(url), url });
+  checkPartialSupport(url);
   loadUrl(url, true);
 }
 
