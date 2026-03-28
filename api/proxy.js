@@ -71,27 +71,31 @@ async function decompress(buf, enc) {
 
 // ── Proxy URL builder ─────────────────────────────────────────────────────────
 const PROXY_PATH = '/api/proxy?url=';
-function proxyUrl(url, base) {
+// proxyUrl for server-side rewriting — needs absolute origin injected at call time
+function proxyUrl(url, base, origin) {
   if (!url) return null;
   const s = url.trim();
   if (!s || /^(data:|javascript:|blob:|about:|#|mailto:|tel:)/i.test(s)) return null;
-  try { return PROXY_PATH + encodeURIComponent(new URL(s, base).href); } catch(_) { return null; }
+  try {
+    const prefix = origin ? origin + PROXY_PATH : PROXY_PATH;
+    return prefix + encodeURIComponent(new URL(s, base).href);
+  } catch(_) { return null; }
 }
 
 // ── Attribute rewriter (server-side HTML) ────────────────────────────────────
-function rewriteAttr(html, tag, attr, base) {
+function rewriteAttr(html, tag, attr, base, origin) {
   const re = new RegExp(`(<${tag}(?:\\s[^>]*)?)\\s${attr}=(["'])([^"']*?)\\2`, 'gi');
   return html.replace(re, (m, pre, q, url) => {
-    const p = proxyUrl(url, base);
+    const p = proxyUrl(url, base, origin);
     return p ? `${pre} ${attr}=${q}${p}${q}` : m;
   });
 }
 
-function rewriteSrcset(html, base) {
+function rewriteSrcset(html, base, origin) {
   return html.replace(/(\ssrcset=)(["'])([^"']+)(\2)/gi, (_m, pre, q, val, qc) => {
     const rw = val.replace(/([^\s,][^\s,]*?)(\s+[\d.]+[wx])?(?=\s*,|\s*$)/g, (part, url, desc) => {
       if (!url) return part;
-      const p = proxyUrl(url.trim(), base);
+      const p = proxyUrl(url.trim(), base, origin);
       return p ? (p + (desc||'')) : part;
     });
     return `${pre}${q}${rw}${qc}`;
@@ -99,16 +103,16 @@ function rewriteSrcset(html, base) {
 }
 
 // ── CSS rewriter — base must be the CSS file's own URL ───────────────────────
-function rewriteCssUrls(css, cssBase) {
+function rewriteCssUrls(css, cssBase, origin) {
   return css
     .replace(/url\(\s*(["']?)([^)"'\s]+)\1\s*\)/gi, (_m, q, url) => {
-      const p = proxyUrl(url, cssBase); return p ? `url('${p}')` : _m;
+      const p = proxyUrl(url, cssBase, origin); return p ? `url('${p}')` : _m;
     })
     .replace(/@import\s+(['"])([^'"]+)\1/gi, (_m, _q, url) => {
-      const p = proxyUrl(url, cssBase); return p ? `@import '${p}'` : _m;
+      const p = proxyUrl(url, cssBase, origin); return p ? `@import '${p}'` : _m;
     })
     .replace(/@import\s+url\(\s*(["']?)([^)"'\s]+)\1\s*\)/gi, (_m, _q, url) => {
-      const p = proxyUrl(url, cssBase); return p ? `@import url('${p}')` : _m;
+      const p = proxyUrl(url, cssBase, origin); return p ? `@import url('${p}')` : _m;
     });
 }
 
@@ -150,7 +154,7 @@ function buildRewriterScript(targetUrl, origin) {
   return `<script data-cx-rewriter>
 (function(){
 'use strict';
-var PROXY='${PROXY_PATH}',PAGE_URL='${safe(targetUrl)}';
+var PROXY='${safe(origin)}${PROXY_PATH}',PAGE_URL='${safe(targetUrl)}';
 
 function toAbs(h){
   if(!h||typeof h!=='string')return null;
@@ -335,6 +339,13 @@ module.exports = async function handler(req, res) {
   const ip = (req.headers['x-forwarded-for']||'').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(ip)) return res.status(429).send(errorPage('Too many requests.','',429));
 
+  // Derive absolute origin so CSS/HTML rewrites produce absolute proxy URLs
+  const reqOrigin = (() => {
+    const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+    const host  = req.headers['x-forwarded-host'] || req.headers.host || '';
+    return host ? `${proto}://${host}` : '';
+  })();
+
   let targetUrl, parsedUrl;
   try {
     const raw = req.query.url||'';
@@ -405,25 +416,25 @@ module.exports = async function handler(req, res) {
         ['embed','src'],['object','data'],['video','poster'],
         ['img','data-src'],['img','data-lazy-src'],['img','data-original'],
         ['div','data-bg'],['section','data-bg'],['body','background'],
-      ]) html = rewriteAttr(html, tag, attr, base);
+      ]) html = rewriteAttr(html, tag, attr, base, reqOrigin);
 
-      html = rewriteSrcset(html, base);
+      html = rewriteSrcset(html, base, reqOrigin);
 
       html = html.replace(/(<form(?:\s[^>]*)?)\saction=(["'])([^"']+)\2/gi, (_m,pre,q,url) => {
-        const p=proxyUrl(url,base); return p?`${pre} action=${q}${p}${q}`:_m;
+        const p=proxyUrl(url,base,reqOrigin); return p?`${pre} action=${q}${p}${q}`:_m;
       });
       html = html.replace(/(\sstyle=)(["'])([^"']*)\2/gi, (_m,pre,q,s) =>
-        `${pre}${q}${rewriteCssUrls(s,base)}${q}`
+        `${pre}${q}${rewriteCssUrls(s,base,reqOrigin)}${q}`
       );
       html = html.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
-        (_m,open,css,close) => open+rewriteCssUrls(css,base)+close
+        (_m,open,css,close) => open+rewriteCssUrls(css,base,reqOrigin)+close
       );
       html = html
         .replace(/<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*\/?>/gi,'')
         .replace(/<meta[^>]*http-equiv=["']X-Frame-Options["'][^>]*\/?>/gi,'')
         .replace(/<meta[^>]*name=["']referrer["'][^>]*\/?>/gi,'');
 
-      const rwScript= buildRewriterScript(targetUrl, parsedUrl.origin);
+      const rwScript= buildRewriterScript(targetUrl, reqOrigin);
       const hasBase = /<base\s[^>]*href/i.test(html);
       const baseTag = hasBase?'': `<base href="${targetUrl}">`;
 
@@ -443,7 +454,7 @@ module.exports = async function handler(req, res) {
     // ── CSS — use CSS file's own URL as base ─────────────────────────────────
     if (effectiveCT.includes('text/css')) {
       const raw = Buffer.from(await upstream.arrayBuffer());
-      const css = rewriteCssUrls((await decompress(raw,enc)).toString('utf8'), targetUrl);
+      const css = rewriteCssUrls((await decompress(raw,enc)).toString('utf8'), targetUrl, reqOrigin);
       res.setHeader('Content-Type','text/css; charset=utf-8');
       return res.status(upstream.status).send(css);
     }
@@ -453,7 +464,7 @@ module.exports = async function handler(req, res) {
       const raw = Buffer.from(await upstream.arrayBuffer());
       const js  = (await decompress(raw,enc)).toString('utf8')
         .replace(/((?:window\.)?location\.(?:href|assign|replace)\s*=\s*)(["'])([^"']+)\2/g,
-          (_m,pre,q,url) => { const p=proxyUrl(url,targetUrl); return p?`${pre}${q}${p}${q}`:_m; });
+          (_m,pre,q,url) => { const p=proxyUrl(url,targetUrl,reqOrigin); return p?`${pre}${q}${p}${q}`:_m; });
       res.setHeader('Content-Type', effectiveCT.includes(';')?effectiveCT:effectiveCT+'; charset=utf-8');
       return res.status(upstream.status).send(js);
     }
