@@ -1,5 +1,5 @@
 /**
- * CycloneX Proxy — api/proxy.js (v7)
+ * CycloneX Proxy — api/proxy.js (v8)
  *
  * Fixes over v5:
  *  1. data: URI rewriting bug — rewriter was prepending proxy URL to data: URIs
@@ -277,6 +277,7 @@ function px(url){
 // Translating them to an absolute proxy URL (https://vercel.app/api/proxy?url=https://google.com/...)
 // triggers a SecurityError because the history URL must share the document origin.
 // Fix: translate to a RELATIVE proxy path (/api/proxy?url=...) instead.
+// ALSO: some URLs may already contain /api/proxy?url= (from server rewriting) — skip those.
 (function(){
   var appOrigin='${safe(origin)}';
   ['pushState','replaceState'].forEach(function(fn){
@@ -284,16 +285,19 @@ function px(url){
     history[fn]=function(state,title,url){
       if(!url){try{orig(state,title,url);}catch(e){}return;}
       var u=String(url);
-      // Absolute URL with foreign origin -> translate to RELATIVE proxy path (avoids SecurityError)
-      if(/^https?:\/\//i.test(u)){
-        // Already on our origin (e.g. already a proxied URL) — pass through unchanged
-        if(u.startsWith(appOrigin))return;
-        // Wrap as relative path so it stays same-origin
-        try{orig(state,title,'/api/proxy?url='+encodeURIComponent(u));}catch(e){}
+      // Already a relative path or fragment — pass through unchanged
+      if(!u.startsWith('http')){{try{orig(state,title,u);}catch(e){}return;}}
+      // Already on our Vercel origin — pass through unchanged
+      if(u.startsWith(appOrigin)){try{orig(state,title,u);}catch(e){}return;}
+      // Contains /api/proxy?url= anywhere (e.g. google.com/api/proxy?url=...) — strip to just the proxied path
+      var pidx=u.indexOf('/api/proxy?url=');
+      if(pidx!==-1){
+        // Extract the relative proxy path portion and use it
+        try{orig(state,title,u.slice(pidx));}catch(e){}
         return;
       }
-      // Relative URL like /watch?v=... — keep as-is
-      try{orig(state,title,u);}catch(e){}
+      // Absolute URL with foreign origin -> translate to RELATIVE proxy path (avoids SecurityError)
+      try{orig(state,title,'/api/proxy?url='+encodeURIComponent(u));}catch(e){}
     };
   });
 })();
