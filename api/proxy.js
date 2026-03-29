@@ -1,5 +1,5 @@
 /**
- * CycloneX Proxy — api/proxy.js (v6)
+ * CycloneX Proxy — api/proxy.js (v7)
  *
  * Fixes over v5:
  *  1. data: URI rewriting bug — rewriter was prepending proxy URL to data: URIs
@@ -113,11 +113,34 @@ function rewriteAttr(html, tag, attr, base, origin) {
 
 function rewriteSrcset(html, base, origin) {
   return html.replace(/(\ssrcset=)([\"'])([^\"']+)(\2)/gi, (_m, pre, q, val, qc) => {
-    const rw = val.replace(/([^\s,][^\s,]*?)(\s+[\d.]+[wx])?(?=\s*,|\s*$)/g, (part, url, desc) => {
-      if (!url || /^data:/i.test(url.trim())) return part;
+    // Split on commas that are NOT inside a data: URI.
+    // A data: URI looks like: data:<type>[;base64],<payload>
+    // We detect entry boundaries by splitting only on ", " or "," that are
+    // followed by an optional space then a non-base64-garbage token.
+    // Simpler robust approach: parse candidates manually.
+    const candidates = [];
+    let rest = val.trim();
+    while (rest.length) {
+      // A data: entry — consume until next whitespace-delimited descriptor or end
+      if (/^data:/i.test(rest)) {
+        // find the boundary: optional descriptor (digits+w/x) then comma or end
+        const m = rest.match(/^(data:[^\s,]+,[^\s,]*(?:\s+[\d.]+[wx])?)(\s*,\s*|$)/i);
+        if (m) { candidates.push(m[1]); rest = rest.slice(m[0].length).trimStart(); continue; }
+        // fallback: take everything
+        candidates.push(rest); break;
+      }
+      // Normal URL entry: url optionally followed by descriptor
+      const m = rest.match(/^([^\s,]+(?:\s+[\d.]+[wx])?)(\s*,\s*|$)/);
+      if (m) { candidates.push(m[1]); rest = rest.slice(m[0].length).trimStart(); continue; }
+      candidates.push(rest); break;
+    }
+    const rw = candidates.map(entry => {
+      const [url, ...descParts] = entry.split(/\s+/);
+      const desc = descParts.length ? ' ' + descParts.join(' ') : '';
+      if (!url || /^data:/i.test(url.trim())) return entry;
       const p = proxyUrl(url.trim(), base, origin);
-      return p ? (p + (desc||'')) : part;
-    });
+      return p ? (p + desc) : entry;
+    }).join(', ');
     return `${pre}${q}${rw}${qc}`;
   });
 }
@@ -655,15 +678,9 @@ module.exports = async function handler(req, res) {
     // ── JavaScript ────────────────────────────────────────────────────────────
     if (effectiveCT.includes('javascript') || effectiveCT.includes('ecmascript')) {
       const raw = Buffer.from(await upstream.arrayBuffer());
-      let js = (await decompress(raw, enc)).toString('utf8');
-      // Rewrite hard-coded location.href = '...' assignments
-      // Use a length cap (max 2048 chars) to avoid matching inside template literals
-      // and add negative lookbehind to avoid matching after operators like +, ?, :
-      js = js.replace(/(?<![+?:,({])(\s*(?:window\.)?location\.(?:href|assign|replace)\s*=\s*)([\"'])(https?:\/\/[^\"']{1,2048})\2/g,
-        (_m, pre, q, url) => {
-          const p = proxyUrl(url, targetUrl, reqOrigin);
-          return p ? `${pre}${q}${p}${q}` : _m;
-        });
+      const js  = (await decompress(raw, enc)).toString('utf8');
+      // JavaScript is passed through as-is.
+      // Client-side patchProto handles location.href assignments at runtime.
       res.setHeader('Content-Type', effectiveCT.includes(';') ? effectiveCT : effectiveCT + '; charset=utf-8');
       return res.status(upstream.status).send(js);
     }
