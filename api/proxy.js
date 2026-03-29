@@ -1,5 +1,5 @@
 /**
- * CycloneX Proxy — api/proxy.js (v8)
+ * CycloneX Proxy — api/proxy.js (v6)
  *
  * Fixes over v5:
  *  1. data: URI rewriting bug — rewriter was prepending proxy URL to data: URIs
@@ -113,34 +113,11 @@ function rewriteAttr(html, tag, attr, base, origin) {
 
 function rewriteSrcset(html, base, origin) {
   return html.replace(/(\ssrcset=)([\"'])([^\"']+)(\2)/gi, (_m, pre, q, val, qc) => {
-    // Split on commas that are NOT inside a data: URI.
-    // A data: URI looks like: data:<type>[;base64],<payload>
-    // We detect entry boundaries by splitting only on ", " or "," that are
-    // followed by an optional space then a non-base64-garbage token.
-    // Simpler robust approach: parse candidates manually.
-    const candidates = [];
-    let rest = val.trim();
-    while (rest.length) {
-      // A data: entry — consume until next whitespace-delimited descriptor or end
-      if (/^data:/i.test(rest)) {
-        // find the boundary: optional descriptor (digits+w/x) then comma or end
-        const m = rest.match(/^(data:[^\s,]+,[^\s,]*(?:\s+[\d.]+[wx])?)(\s*,\s*|$)/i);
-        if (m) { candidates.push(m[1]); rest = rest.slice(m[0].length).trimStart(); continue; }
-        // fallback: take everything
-        candidates.push(rest); break;
-      }
-      // Normal URL entry: url optionally followed by descriptor
-      const m = rest.match(/^([^\s,]+(?:\s+[\d.]+[wx])?)(\s*,\s*|$)/);
-      if (m) { candidates.push(m[1]); rest = rest.slice(m[0].length).trimStart(); continue; }
-      candidates.push(rest); break;
-    }
-    const rw = candidates.map(entry => {
-      const [url, ...descParts] = entry.split(/\s+/);
-      const desc = descParts.length ? ' ' + descParts.join(' ') : '';
-      if (!url || /^data:/i.test(url.trim())) return entry;
+    const rw = val.replace(/([^\s,][^\s,]*?)(\s+[\d.]+[wx])?(?=\s*,|\s*$)/g, (part, url, desc) => {
+      if (!url || /^data:/i.test(url.trim())) return part;
       const p = proxyUrl(url.trim(), base, origin);
-      return p ? (p + desc) : entry;
-    }).join(', ');
+      return p ? (p + (desc||'')) : part;
+    });
     return `${pre}${q}${rw}${qc}`;
   });
 }
@@ -277,7 +254,6 @@ function px(url){
 // Translating them to an absolute proxy URL (https://vercel.app/api/proxy?url=https://google.com/...)
 // triggers a SecurityError because the history URL must share the document origin.
 // Fix: translate to a RELATIVE proxy path (/api/proxy?url=...) instead.
-// ALSO: some URLs may already contain /api/proxy?url= (from server rewriting) — skip those.
 (function(){
   var appOrigin='${safe(origin)}';
   ['pushState','replaceState'].forEach(function(fn){
@@ -285,19 +261,16 @@ function px(url){
     history[fn]=function(state,title,url){
       if(!url){try{orig(state,title,url);}catch(e){}return;}
       var u=String(url);
-      // Already a relative path or fragment — pass through unchanged
-      if(!u.startsWith('http')){{try{orig(state,title,u);}catch(e){}return;}}
-      // Already on our Vercel origin — pass through unchanged
-      if(u.startsWith(appOrigin)){try{orig(state,title,u);}catch(e){}return;}
-      // Contains /api/proxy?url= anywhere (e.g. google.com/api/proxy?url=...) — strip to just the proxied path
-      var pidx=u.indexOf('/api/proxy?url=');
-      if(pidx!==-1){
-        // Extract the relative proxy path portion and use it
-        try{orig(state,title,u.slice(pidx));}catch(e){}
+      // Absolute URL with foreign origin -> translate to RELATIVE proxy path (avoids SecurityError)
+      if(/^https?:\/\//i.test(u)){
+        // Already on our origin (e.g. already a proxied URL) — pass through unchanged
+        if(u.startsWith(appOrigin))return;
+        // Wrap as relative path so it stays same-origin
+        try{orig(state,title,'/api/proxy?url='+encodeURIComponent(u));}catch(e){}
         return;
       }
-      // Absolute URL with foreign origin -> translate to RELATIVE proxy path (avoids SecurityError)
-      try{orig(state,title,'/api/proxy?url='+encodeURIComponent(u));}catch(e){}
+      // Relative URL like /watch?v=... — keep as-is
+      try{orig(state,title,u);}catch(e){}
     };
   });
 })();
@@ -682,9 +655,15 @@ module.exports = async function handler(req, res) {
     // ── JavaScript ────────────────────────────────────────────────────────────
     if (effectiveCT.includes('javascript') || effectiveCT.includes('ecmascript')) {
       const raw = Buffer.from(await upstream.arrayBuffer());
-      const js  = (await decompress(raw, enc)).toString('utf8');
-      // JavaScript is passed through as-is.
-      // Client-side patchProto handles location.href assignments at runtime.
+      let js = (await decompress(raw, enc)).toString('utf8');
+      // Rewrite hard-coded location.href = '...' assignments
+      // Use a length cap (max 2048 chars) to avoid matching inside template literals
+      // and add negative lookbehind to avoid matching after operators like +, ?, :
+      js = js.replace(/(?<![+?:,({])(\s*(?:window\.)?location\.(?:href|assign|replace)\s*=\s*)([\"'])(https?:\/\/[^\"']{1,2048})\2/g,
+        (_m, pre, q, url) => {
+          const p = proxyUrl(url, targetUrl, reqOrigin);
+          return p ? `${pre}${q}${p}${q}` : _m;
+        });
       res.setHeader('Content-Type', effectiveCT.includes(';') ? effectiveCT : effectiveCT + '; charset=utf-8');
       return res.status(upstream.status).send(js);
     }

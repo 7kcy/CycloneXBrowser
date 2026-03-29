@@ -880,6 +880,70 @@
     @media (max-width: 420px) {
       .shortcuts-grid { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* ══ GAMES SCREEN ════════════════════════════════════════ */
+    .games-screen {
+      position: relative; z-index: 5;
+      min-height: 100vh;
+      padding-top: calc(var(--topbar-h) + 32px);
+      padding-bottom: 80px; padding-left: 24px; padding-right: 24px;
+      animation: fadeUp 0.45s ease both;
+    }
+    .games-screen.hidden { display: none; }
+    .games-header {
+      text-align: center; margin-bottom: 32px;
+    }
+    .games-title {
+      font-family: var(--font-display); font-size: 28px; font-weight: 800;
+      color: var(--text); letter-spacing: -1px;
+    }
+    .games-title span { color: var(--accent); }
+    .games-subtitle {
+      font-family: var(--font-mono); font-size: 12px; color: var(--text-3);
+      margin-top: 6px; letter-spacing: 0.08em;
+    }
+    .games-section-label {
+      font-family: var(--font-display); font-size: 13px; font-weight: 700;
+      color: var(--text-3); letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 14px; margin-top: 28px;
+    }
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 14px;
+      max-width: 900px; margin: 0 auto;
+    }
+    .game-tile {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      cursor: pointer; padding: 10px 6px; border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
+      text-decoration: none;
+      position: relative; overflow: hidden;
+    }
+    .game-tile::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.08), transparent);
+      opacity: 0; transition: opacity 0.18s;
+    }
+    .game-tile:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); background: var(--surface-2); }
+    .game-tile:hover::before { opacity: 1; }
+    .game-tile:active { transform: translateY(-1px); }
+    .game-img {
+      width: 60px; height: 60px; border-radius: 12px;
+      object-fit: cover; flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .game-name {
+      font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+      color: var(--text-2); text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      width: 100%; max-width: 80px;
+    }
+    @media (max-width: 600px) {
+      .games-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 10px; }
+      .game-img { width: 50px; height: 50px; }
+    }
   </style>
 </head>
 <body>
@@ -988,10 +1052,25 @@
   <div class="tab-bar" id="tabBar">
   </div>
   <div class="topbar-right">
+    <button class="icon-btn" onclick="openGames()" title="Games" id="gamesBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="6" width="20" height="12" rx="3"/>
+        <path d="M6 12h4M8 10v4"/>
+        <circle cx="15" cy="11" r="1" fill="currentColor" stroke="none"/>
+        <circle cx="18" cy="13" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
     <button class="icon-btn" onclick="openSettings()" title="Settings">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    <button class="icon-btn" onclick="goHome()" title="Home">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
     </button>
   </div>
@@ -1051,6 +1130,20 @@
 
   </div>
 </main>
+
+<!-- ══ GAMES ══════════════════════════════════════════════════ -->
+<div class="games-screen hidden" id="gamesScreen">
+  <div style="max-width:900px;margin:0 auto;">
+    <div class="games-header">
+      <div class="games-title">Game<span>Hub</span></div>
+      <div class="games-subtitle">Top games · click to play via proxy</div>
+    </div>
+    <div class="games-section-label">⭐ Top 20</div>
+    <div class="games-grid" id="gamesTopGrid"></div>
+    <div class="games-section-label">🎮 All Games</div>
+    <div class="games-grid" id="gamesAllGrid"></div>
+  </div>
+</div>
 
 <!-- ══ RESULTS ════════════════════════════════════════════════ -->
 <div class="results-screen hidden" id="resultsScreen">
@@ -1512,11 +1605,111 @@ function renderTabs() {
 
 /* ── Settings ──────────────────────────────────────────────── */
 function openSettings()  { document.getElementById('settingsPanel').classList.add('open'); document.getElementById('settingsOverlay').classList.add('open'); }
+
+/* ══ GAMES ══════════════════════════════════════════════════ */
+const CX_GAMES_TOP = [
+  { name: 'Drive Mad',        img: 'https://copchurch.org/img/drive-mad.png',         url: 'https://www.crazygames.com/game/drive-mad' },
+  { name: 'Slope',            img: 'https://copchurch.org/img/slope.png',              url: 'https://slope-game.github.io/' },
+  { name: 'G-Switch 4',       img: 'https://copchurch.org/img/g-switch.png',           url: 'https://www.coolmathgames.com/0-g-switch-4' },
+  { name: 'Among Us',         img: 'https://copchurch.org/img/among-us.png',           url: 'https://www.crazygames.com/game/among-us-online-edition' },
+  { name: 'Stickman Hook',    img: 'https://copchurch.org/img/stickman-hook.png',      url: 'https://www.crazygames.com/game/stickman-hook' },
+  { name: 'Escape Road 2',    img: 'https://copchurch.org/img/escape-road-2.png',      url: 'https://www.crazygames.com/game/escape-road-2' },
+  { name: 'Get Yoked',        img: 'https://copchurch.org/img/get-yoked.png',          url: 'https://www.crazygames.com/game/get-yoked' },
+  { name: 'Sniper',           img: 'https://copchurch.org/img/sniper.png',             url: 'https://www.crazygames.com/game/sniper-3d' },
+  { name: 'City Block',       img: 'https://copchurch.org/img/city-block.png',         url: 'https://www.crazygames.com/game/city-block-game' },
+  { name: 'Bit Planes',       img: 'https://copchurch.org/img/bit-planes.png',         url: 'https://www.crazygames.com/game/bit-planes' },
+  { name: 'Smash Karts',      img: 'https://copchurch.org/img/smash-karts.png',        url: 'https://smashkarts.io/' },
+  { name: 'Stickman Boost',   img: 'https://copchurch.org/img/stickman-boost.png',     url: 'https://www.crazygames.com/game/stickman-boost' },
+  { name: 'Rival Race',       img: 'https://copchurch.org/img/rival-race.png',         url: 'https://www.crazygames.com/game/rival-race' },
+  { name: 'Granny',           img: 'https://copchurch.org/img/granny.png',             url: 'https://www.crazygames.com/game/granny' },
+  { name: 'Tag',              img: 'https://copchurch.org/img/tag.png',                url: 'https://www.crazygames.com/game/tag-game' },
+  { name: 'Sneak Shockers',   img: 'https://copchurch.org/img/sneak-shockers.png',     url: 'https://www.crazygames.com/game/sneak-shockers' },
+  { name: 'Hitman',           img: 'https://copchurch.org/img/hitman.png',             url: 'https://www.crazygames.com/game/hitman-go' },
+  { name: 'Golf',             img: 'https://copchurch.org/img/golf.png',               url: 'https://www.crazygames.com/game/golf-orbit' },
+  { name: 'Paper.io',         img: 'https://copchurch.org/img/paper-io.png',           url: 'https://paper-io.com/' },
+  { name: 'Pixel Art',        img: 'https://copchurch.org/img/pixel-art.png',          url: 'https://www.crazygames.com/game/pixel-art' },
+];
+const CX_GAMES_ALL = [
+  { name: 'Sneak Shockers',   img: 'https://copchurch.org/img/sneak-shockers.png',     url: 'https://www.crazygames.com/game/sneak-shockers' },
+  { name: 'Pixel Puzzles',    img: 'https://copchurch.org/img/pixel-puzzles.png',       url: 'https://www.crazygames.com/game/pixel-puzzles' },
+  { name: 'Stickman Hook',    img: 'https://copchurch.org/img/stickman-hook.png',       url: 'https://www.crazygames.com/game/stickman-hook' },
+  { name: 'Sky High',         img: 'https://copchurch.org/img/sky-high.png',            url: 'https://www.crazygames.com/game/sky-high' },
+  { name: 'Bad Monday',       img: 'https://copchurch.org/img/bad-monday.png',          url: 'https://www.crazygames.com/game/bad-monday-simulator' },
+  { name: 'Hangman',          img: 'https://copchurch.org/img/hangman.png',             url: 'https://www.crazygames.com/game/hangman' },
+  { name: 'Zombie Shooter',   img: 'https://copchurch.org/img/zombie-shooter.png',      url: 'https://www.crazygames.com/game/zombie-shooter' },
+  { name: 'Angry Birds',      img: 'https://copchurch.org/img/angry-birds.png',         url: 'https://www.crazygames.com/game/angry-birds' },
+  { name: 'Kirby',            img: 'https://copchurch.org/img/kirby.png',               url: 'https://www.crazygames.com/game/kirby-adventure' },
+  { name: 'Blob Opera',       img: 'https://copchurch.org/img/blob-opera.png',          url: 'https://artsandculture.google.com/experiment/blob-opera/AAHWrq360NcGbw' },
+  { name: 'Duck Life',        img: 'https://copchurch.org/img/duck-life.png',           url: 'https://www.coolmathgames.com/0-duck-life' },
+  { name: 'Super Mario',      img: 'https://copchurch.org/img/super-mario.png',         url: 'https://supermario-game.com/' },
+  { name: 'Cuphead',          img: 'https://copchurch.org/img/cuphead.png',             url: 'https://www.crazygames.com/game/cuphead' },
+  { name: 'Duck Life 3',      img: 'https://copchurch.org/img/duck-life-3.png',         url: 'https://www.coolmathgames.com/0-duck-life-3' },
+  { name: 'Gun Game',         img: 'https://copchurch.org/img/gun-game.png',            url: 'https://www.crazygames.com/game/gun-game-3d' },
+  { name: 'Warfare',          img: 'https://copchurch.org/img/warfare.png',             url: 'https://www.crazygames.com/game/warfare' },
+  { name: 'Tropics',          img: 'https://copchurch.org/img/tropics.png',             url: 'https://www.crazygames.com/game/tropics' },
+  { name: 'Kirby Green',      img: 'https://copchurch.org/img/kirby-green.png',         url: 'https://www.crazygames.com/game/kirby-green' },
+  { name: 'Stickman',        img: 'https://copchurch.org/img/stickman.png',            url: 'https://www.crazygames.com/game/stickman-fighter' },
+  { name: 'Google Dino',      img: 'https://copchurch.org/img/google-dino.png',         url: 'https://chromedino.com/' },
+  { name: 'Romantik',        img: 'https://copchurch.org/img/romantik.png',            url: 'https://www.crazygames.com/game/romantik' },
+  { name: 'Dome Keeper',      img: 'https://copchurch.org/img/dome-keeper.png',         url: 'https://www.crazygames.com/game/dome-keeper' },
+  { name: '3 Dash',           img: 'https://copchurch.org/img/3-dash.png',              url: 'https://www.crazygames.com/game/3-dash' },
+  { name: 'Minesweeper',      img: 'https://copchurch.org/img/minesweeper.png',         url: 'https://minesweeperonline.com/' },
+  { name: 'Revolution Idle',  img: 'https://copchurch.org/img/revolution-idle.png',     url: 'https://www.crazygames.com/game/revolution-idle' },
+  { name: 'Stickwar',         img: 'https://copchurch.org/img/stickwar.png',            url: 'https://www.crazygames.com/game/stick-war-legacy' },
+  { name: 'Celeste',          img: 'https://copchurch.org/img/celeste.png',             url: 'https://www.crazygames.com/game/celeste-classic' },
+  { name: 'Postal',           img: 'https://copchurch.org/img/postal.png',              url: 'https://www.crazygames.com/game/postal' },
+  { name: 'Slime Rancher',    img: 'https://copchurch.org/img/slime-rancher.png',       url: 'https://www.crazygames.com/game/slime-rancher' },
+  { name: 'Kirby Pink',       img: 'https://copchurch.org/img/kirby-pink.png',          url: 'https://www.crazygames.com/game/kirby-pink' },
+  { name: 'Gurt',             img: 'https://copchurch.org/img/gurt.png',               url: 'https://www.crazygames.com/game/gurt' },
+  { name: 'Red Ball',         img: 'https://copchurch.org/img/red-ball.png',            url: 'https://www.crazygames.com/game/red-ball-4' },
+  { name: 'Run 3',            img: 'https://copchurch.org/img/run-3.png',               url: 'https://www.coolmathgames.com/0-run-3' },
+  { name: 'Deltarune',        img: 'https://copchurch.org/img/deltarune.png',           url: 'https://www.crazygames.com/game/deltarune' },
+  { name: 'Scratch Game',     img: 'https://copchurch.org/img/scratch-game.png',        url: 'https://scratch.mit.edu/projects/' },
+  { name: 'Bee Swarm',        img: 'https://copchurch.org/img/bee-swarm.png',           url: 'https://www.crazygames.com/game/bee-swarm-simulator' },
+  { name: 'Move Arrow',       img: 'https://copchurch.org/img/move-arrow.png',          url: 'https://www.crazygames.com/game/move-arrow' },
+  { name: 'UCN',              img: 'https://copchurch.org/img/ucn.png',                 url: 'https://www.crazygames.com/game/ucn' },
+  { name: 'Moby Dick',        img: 'https://copchurch.org/img/moby-dick.png',           url: 'https://www.crazygames.com/game/moby-dick' },
+  { name: 'Zelda',            img: 'https://copchurch.org/img/zelda.png',               url: 'https://www.crazygames.com/game/zelda' },
+  { name: 'Pinball',          img: 'https://copchurch.org/img/pinball.png',             url: 'https://www.crazygames.com/game/pinball' },
+  { name: 'Escape Road 2',    img: 'https://copchurch.org/img/escape-road-2.png',       url: 'https://www.crazygames.com/game/escape-road-2' },
+  { name: 'Stray Cat',        img: 'https://copchurch.org/img/stray-cat.png',           url: 'https://www.crazygames.com/game/stray-cat' },
+  { name: 'Ecro Chess',       img: 'https://copchurch.org/img/ecro-chess.png',          url: 'https://www.crazygames.com/game/ecro-chess' },
+  { name: 'Ball 3D',          img: 'https://copchurch.org/img/ball-3d.png',             url: 'https://www.crazygames.com/game/ball-3d' },
+  { name: 'Flip Master',      img: 'https://copchurch.org/img/flip-master.png',         url: 'https://www.crazygames.com/game/flip-master' },
+  { name: 'Slime Simulator',  img: 'https://copchurch.org/img/slime-simulator.png',     url: 'https://www.crazygames.com/game/slime-simulator' },
+  { name: 'Bubble Zombies',   img: 'https://copchurch.org/img/bubble-zombies.png',      url: 'https://www.crazygames.com/game/bubble-shooter-zombies' },
+];
+
+function buildGameTile(g) {
+  const tile = document.createElement('div');
+  tile.className = 'game-tile';
+  tile.title = g.name;
+  tile.onclick = () => openBrowser(g.url);
+  // Use copchurch favicon as fallback
+  const fallbackSrc = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(new URL(g.url).hostname)}`;
+  tile.innerHTML = `
+    <img class="game-img" src="${g.img}" alt="${g.name}"
+         onerror="this.src='${fallbackSrc}'; this.onerror=null;"
+         loading="lazy"/>
+    <div class="game-name">${g.name}</div>`;
+  return tile;
+}
+
+function openGames() {
+  showScreen('games');
+  const topGrid = document.getElementById('gamesTopGrid');
+  const allGrid = document.getElementById('gamesAllGrid');
+  if (topGrid.children.length === 0) {
+    CX_GAMES_TOP.forEach(g => topGrid.appendChild(buildGameTile(g)));
+    CX_GAMES_ALL.forEach(g => allGrid.appendChild(buildGameTile(g)));
+  }
+}
 function closeSettings() { document.getElementById('settingsPanel').classList.remove('open'); document.getElementById('settingsOverlay').classList.remove('open'); }
 
 /* ── Screens ───────────────────────────────────────────────── */
 function showScreen(which) {
   document.getElementById('homeScreen').classList.toggle('hidden', which !== 'home');
+  document.getElementById('gamesScreen').classList.toggle('hidden', which !== 'games');
   document.getElementById('resultsScreen').classList.toggle('hidden', which !== 'results');
   document.getElementById('browserScreen').classList.toggle('hidden', which !== 'browser');
 }
