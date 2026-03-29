@@ -102,7 +102,10 @@ function proxyUrl(url, base, origin) {
 function rewriteAttr(html, tag, attr, base, origin) {
   const re = new RegExp(`(<${tag}(?:\\s[^>]*)?)\\s${attr}=([\"'])([^\"']*?)\\2`, 'gi');
   return html.replace(re, (m, pre, q, url) => {
-    if (/^data:/i.test(url.trim())) return m; // never touch data URIs
+    const trimmed = url.trim();
+    // Never touch data URIs, blob URIs, or already-proxied URLs
+    if (/^(data:|blob:|javascript:)/i.test(trimmed)) return m;
+    if (trimmed.includes('/api/proxy?url=')) return m;
     const p = proxyUrl(url, base, origin);
     return p ? `${pre} ${attr}=${q}${p}${q}` : m;
   });
@@ -247,8 +250,10 @@ function px(url){
 })();
 
 // ── history: patch BEFORE any site JS ────────────────────────────────────────
-// YouTube's history manager calls replaceState with its own origin URLs.
-// We intercept and translate them to proxy-origin URLs.
+// Sites call replaceState/pushState with their own-origin absolute URLs.
+// Translating them to an absolute proxy URL (https://vercel.app/api/proxy?url=https://google.com/...)
+// triggers a SecurityError because the history URL must share the document origin.
+// Fix: translate to a RELATIVE proxy path (/api/proxy?url=...) instead.
 (function(){
   var appOrigin='${safe(origin)}';
   ['pushState','replaceState'].forEach(function(fn){
@@ -256,15 +261,15 @@ function px(url){
     history[fn]=function(state,title,url){
       if(!url){try{orig(state,title,url);}catch(e){}return;}
       var u=String(url);
-      // Absolute URL with foreign origin -> translate to proxy path
+      // Absolute URL with foreign origin -> translate to RELATIVE proxy path (avoids SecurityError)
       if(/^https?:\/\//i.test(u)){
-        // If it's already a proxied URL on our origin, pass through
+        // Already on our origin (e.g. already a proxied URL) — pass through unchanged
         if(u.startsWith(appOrigin))return;
-        // Otherwise wrap it
-        try{orig(state,title,PROXY+encodeURIComponent(u));}catch(e){}
+        // Wrap as relative path so it stays same-origin
+        try{orig(state,title,'/api/proxy?url='+encodeURIComponent(u));}catch(e){}
         return;
       }
-      // Relative URL like /watch?v=... — keep as-is, browser handles it
+      // Relative URL like /watch?v=... — keep as-is
       try{orig(state,title,u);}catch(e){}
     };
   });
@@ -339,17 +344,22 @@ window.fetch=function(input,init){
   var a=toAbs(url);
   if(!a)return _fetch(input,init);
 
-  // Resolve relative URLs against PAGE_URL (target site), not Vercel origin
   var newInit=Object.assign({},init||{},{credentials:'omit',mode:'cors'});
-  var resolved;
   if(!/^https?:\/\//i.test(url)&&!url.startsWith('//')){
-    // Relative — resolve against page origin
+    // Relative — resolve against PAGE_URL (the proxied site's origin, not Vercel)
+    var resolved;
     try{resolved=new URL(url,PAGE_URL).href;}catch(_){return _fetch(input,init);}
+    // Only proxy if it's not our own app
+    if(resolved.startsWith('${safe(origin)}/api/proxy')||resolved.startsWith('${safe(origin)}/api/search')){
+      return _fetch(input,init);
+    }
     input=PROXY+encodeURIComponent(resolved);
-  } else if(!a.startsWith(location.origin)){
-    input=PROXY+encodeURIComponent(a);
   } else {
-    return _fetch(input,init);
+    // Absolute URL — proxy ALL foreign URLs regardless of location.origin
+    // (location.origin may equal Vercel origin due to allow-same-origin sandbox)
+    var isOwnApp=a.startsWith('${safe(origin)}/api/proxy')||a.startsWith('${safe(origin)}/api/search');
+    if(isOwnApp)return _fetch(input,init);
+    input=PROXY+encodeURIComponent(a);
   }
   return _fetch(input,newInit);
 };
@@ -359,13 +369,25 @@ var _open=XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open=function(method,url,async,user,pass){
   if(url&&typeof url==='string'&&!SKIP_RE.test(url.trim())){
     if(url.indexOf(PROXY)!==-1&&url.indexOf('?url=')!==-1){
-      // already proxied
+      // already proxied — pass through
     } else if(!/^https?:\/\//i.test(url)&&!url.startsWith('//')){
-      // relative — resolve against PAGE_URL
-      try{url=PROXY+encodeURIComponent(new URL(url,PAGE_URL).href);}catch(_){}
+      // relative URL — resolve against the TARGET PAGE (not Vercel origin)
+      try{
+        var resolved=new URL(url,PAGE_URL).href;
+        // Only proxy if resolved URL is not on our own app origin
+        if(!resolved.startsWith('${safe(origin)}')){
+          url=PROXY+encodeURIComponent(resolved);
+        }
+      }catch(_){}
     } else {
       var a=toAbs(url);
-      if(a&&!a.startsWith(location.origin)) url=PROXY+encodeURIComponent(a);
+      // Proxy ALL absolute foreign URLs — don't rely on location.origin
+      // (location.origin === Vercel origin when allow-same-origin is set,
+      //  which would incorrectly skip Google/DuckDuckGo XHRs)
+      if(a){
+        var isOwnAppUrl=a.startsWith('${safe(origin)}/api/proxy')||a.startsWith('${safe(origin)}/api/search');
+        if(!isOwnAppUrl) url=PROXY+encodeURIComponent(a);
+      }
     }
   }
   return _open.call(this,method,url,async!==false,user,pass);
@@ -635,7 +657,9 @@ module.exports = async function handler(req, res) {
       const raw = Buffer.from(await upstream.arrayBuffer());
       let js = (await decompress(raw, enc)).toString('utf8');
       // Rewrite hard-coded location.href = '...' assignments
-      js = js.replace(/((?:window\.)?location\.(?:href|assign|replace)\s*=\s*)([\"'])([^\"']+)\2/g,
+      // Use a length cap (max 2048 chars) to avoid matching inside template literals
+      // and add negative lookbehind to avoid matching after operators like +, ?, :
+      js = js.replace(/(?<![+?:,({])(\s*(?:window\.)?location\.(?:href|assign|replace)\s*=\s*)([\"'])(https?:\/\/[^\"']{1,2048})\2/g,
         (_m, pre, q, url) => {
           const p = proxyUrl(url, targetUrl, reqOrigin);
           return p ? `${pre}${q}${p}${q}` : _m;
